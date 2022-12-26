@@ -2,8 +2,13 @@ module Interpreter
 
 open System
 
+type CompileState =
+    | NotCompiling
+    | Defining
+    | Compiling of word:string
+
 type Interpreter = {
-    Vocabulary: Map<string, Word>;
+    Dictionary: Map<string, Word>;
     Stack: Value list
     Compiling: bool;
 }
@@ -55,7 +60,7 @@ let createInterpreter () =
         ("-", { Symbol = "-"; Instructions = Native NativeSubtract })
     ]
     let vocab = nativeWords |> Map.ofList
-    { Vocabulary = vocab; Stack = []; Compiling = false }
+    { Dictionary = vocab; Stack = []; Compiling = false }
     
 let executeWord interpreter word =
     printfn $"Executing word: %s{word.Symbol}"
@@ -75,11 +80,24 @@ let executeLiteral interpreter (token: string) =
     | _ ->
         Error $"Unable to parse literal: {token}"
 
-let next interpreter token =
-    match interpreter.Vocabulary.TryGetValue(token) with
+let execute interpreter token =
+    match interpreter.Dictionary.TryGetValue(token) with
     | true, word -> executeWord interpreter word
     | _ -> executeLiteral interpreter token
-    
+
+let compile interpreter token =
+    Ok interpreter
+
+let next interpreter token =
+    match token with
+    | ":" -> Ok { interpreter with Compiling = true }
+    | ";" -> Ok { interpreter with Compiling = false }
+    | token ->
+        if interpreter.Compiling then
+            compile interpreter token
+        else
+            execute interpreter token
+
 let run interpreter (input: string) =
     input.Split " "
     |> Array.toList
