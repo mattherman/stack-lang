@@ -22,11 +22,10 @@ let runRepl () =
                 interpreter <- nextState
             | Error msg ->
                 printfn $"Error: %s{msg}"
+            printfn "\n--- Data stack:"
             interpreter.Stack
-            |> List.iter (fun value ->
-                match value with
-                | Literal l -> printfn $"%d{l}"
-                | Word w -> printfn $"%s{w.Symbol}")
+            |> List.iter printValue
+                
 
 let args = Environment.GetCommandLineArgs()
 match args with
