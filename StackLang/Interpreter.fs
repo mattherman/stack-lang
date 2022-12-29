@@ -22,12 +22,9 @@ let printValue value =
     | Literal l -> printfn $"%d{l}"
     | Word w -> printfn $"%s{w.Symbol}"
 
-let split count list =
-    (List.take count list, List.skip count list)
-
 let getParameters count (stack: Value list) =
     if stack.Length >= count then
-        Ok (stack |> split count)
+        Ok (List.take count stack, List.skip count stack)
     else
         Error "Stack underflow"
         
