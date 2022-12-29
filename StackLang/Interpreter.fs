@@ -113,7 +113,7 @@ and executeLiteral interpreter (token: string) =
     | _ ->
         Error $"Unable to parse literal: {token}"
 
-let rec next interpreter (tokens: string list) =
+let rec next (tokens: string list) interpreter =
     match tokens with
     | nextToken::remainingTokens ->
         match nextToken with
@@ -127,14 +127,13 @@ let rec next interpreter (tokens: string list) =
             else
                 let result = compileWord interpreter word
                 let remainingTokens = tokens |> List.skip (word.Length + 2)
-                next result remainingTokens
+                next remainingTokens result
         | token ->
             let result = execute interpreter token
-            result |> Result.bind (fun r -> next r remainingTokens)
+            result |> Result.bind (next remainingTokens)
     | [] ->
         Ok interpreter
         
 let run interpreter (input: string) =
-    input.Split " "
-    |> Array.toList
-    |> next interpreter
+    let tokens = input.Split " " |> Array.toList
+    next tokens interpreter
