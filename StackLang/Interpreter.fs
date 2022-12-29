@@ -89,10 +89,11 @@ let compileWord interpreter word =
     let newDictionary = interpreter.Dictionary.Add(symbol, { Symbol = symbol; Instructions = Compiled instructions })
     { interpreter with Dictionary = newDictionary }
 
-let rec execute interpreter token =
+let rec execute token interpreter =
     match interpreter.Dictionary.TryGetValue(token) with
     | true, word -> executeWord interpreter word
     | _ -> executeLiteral interpreter token
+
 and executeWord interpreter word =
     match word.Instructions with
     | Native nativeWord ->
@@ -100,10 +101,8 @@ and executeWord interpreter word =
         |> Result.map (fun newStack -> { interpreter with Stack = newStack })
     | Compiled compiledWord ->
         compiledWord |> List.fold (fun lastResult nextToken ->
-            match lastResult with
-            | Ok interpreter ->
-                execute interpreter nextToken
-            | Error msg -> Error msg) (Ok interpreter)
+            Result.bind (execute nextToken) lastResult)
+            (Ok interpreter)
 
 and executeLiteral interpreter (token: string) =
     match Int32.TryParse(token) with
@@ -129,7 +128,7 @@ let rec next (tokens: string list) interpreter =
                 let remainingTokens = tokens |> List.skip (word.Length + 2)
                 next remainingTokens result
         | token ->
-            let result = execute interpreter token
+            let result = execute token interpreter
             result |> Result.bind (next remainingTokens)
     | [] ->
         Ok interpreter
