@@ -6,8 +6,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Interpreter.fs" />
     <Compile Include="Program.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\StackLang.Interpreter\StackLang.Interpreter.fsproj" />
   </ItemGroup>
 
 </Project>

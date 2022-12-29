@@ -5,6 +5,8 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "StackLang", "StackLang\StackLang.fsproj", "{836D4955-FAC4-45E4-9EF5-ED453E2C5807}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "StackLang.Interpreter", "StackLang.Interpreter\StackLang.Interpreter.fsproj", "{ADE3E8E7-9D5E-4A2F-BD24-DAAEA874F477}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{836D4955-FAC4-45E4-9EF5-ED453E2C5807}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{836D4955-FAC4-45E4-9EF5-ED453E2C5807}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{836D4955-FAC4-45E4-9EF5-ED453E2C5807}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ADE3E8E7-9D5E-4A2F-BD24-DAAEA874F477}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ADE3E8E7-9D5E-4A2F-BD24-DAAEA874F477}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ADE3E8E7-9D5E-4A2F-BD24-DAAEA874F477}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ADE3E8E7-9D5E-4A2F-BD24-DAAEA874F477}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
