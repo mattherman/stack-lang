@@ -3,6 +3,7 @@
 module Interpreter =
 
     open System
+    open System.Text.RegularExpressions
     open Models
     open Native
 
@@ -20,11 +21,22 @@ module Interpreter =
         let instructions = List.tail word
         let newDictionary = interpreter.Dictionary.Add(symbol, { Symbol = symbol; Instructions = Compiled instructions })
         { interpreter with Dictionary = newDictionary }
+        
+    let push value interpreter =
+        { interpreter with Stack = value::interpreter.Stack }
 
-    let rec execute token interpreter =
+    let rec execute (token: string) interpreter =
         match interpreter.Dictionary.TryGetValue(token) with
-        | true, word -> executeWord interpreter word
-        | _ -> executeLiteral interpreter token
+        | true, word ->
+            executeWord interpreter word
+        | _ ->
+            match token with
+            | str when Regex.IsMatch(str, "^\\\"(.*)\\\"$") -> // ^\"(.*)\"$
+                executeString interpreter str
+            | f when f.Contains(".") ->
+                executeFloat interpreter f
+            | _ ->
+                executeInteger interpreter token
 
     and executeWord interpreter word =
         match word.Instructions with
@@ -36,13 +48,23 @@ module Interpreter =
                 Result.bind (execute nextToken) lastResult)
                 (Ok interpreter)
 
-    and executeLiteral interpreter (token: string) =
+    and executeInteger interpreter (token: string) =
         match Int32.TryParse(token) with
         | true, number ->
-            let literal = Literal number
-            Ok { interpreter with Stack = literal::interpreter.Stack }
+            interpreter |> push (Integer number) |> Ok
         | _ ->
             Error $"Unable to parse literal: {token}"
+
+    and executeFloat interpreter (token: string) =
+        match Double.TryParse(token) with
+        | true, number ->
+            interpreter |> push (Float number) |> Ok
+        | _ ->
+            Error $"Unable to parse float: {token}"
+
+    and executeString interpreter (token: string) =
+        let value = String (token.Substring(1, token.Length - 2))
+        interpreter |> push value |> Ok
 
     let rec next (tokens: string list) interpreter =
         match tokens with
@@ -65,7 +87,8 @@ module Interpreter =
         | [] ->
             Ok interpreter
             
-    let run interpreter (input: string) =
+    let run (input: string) interpreter =
+        // TODO: Need more complex tokenization to handle strings with spaces
         let tokens = input.Split " " |> Array.toList
         next tokens interpreter
 

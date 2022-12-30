@@ -5,8 +5,9 @@ type Interpreter = {
     Stack: Value list
 }
 and Value =
-    | Literal of int
-    | Word of Word
+    | Integer of int
+    | Float of double
+    | String of string
 and Instructions =
     | Native of (Value list -> Result<Value list, string>)
     | Compiled of string list
@@ -17,5 +18,6 @@ and Word = {
 
 let printValue value =
     match value with
-    | Literal l -> printfn $"%d{l}"
-    | Word w -> printfn $"%s{w.Symbol}"
+    | Integer i -> printfn $"%d{i}"
+    | Float l -> printfn $"%f{l}"
+    | String s -> printfn $"\"%s{s}\""

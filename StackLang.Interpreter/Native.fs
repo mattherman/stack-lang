@@ -8,42 +8,85 @@ let getParameters count (stack: Value list) =
     else
         Error "Stack underflow"
         
-let binaryOperation name op (stack: Value list) =
+let operationWithParameters parameterCount operation (stack: Value list) =
     stack
-    |> getParameters 2
-    |> Result.bind (fun (parameters, remainingStack) ->
-        match (parameters[0], parameters[1]) with
-        | Literal first, Literal second ->
-            let newValue = Literal (op second first)
-            Ok (newValue::remainingStack)
-        | _ ->
-            Error $"Values do not support {name}")
+    |> getParameters parameterCount
+    |> Result.bind operation
+    
+let operationWithOneParameter (operation: Value * Value list -> Result<Value list, string>) (stack: Value list) =
+    stack
+    |> operationWithParameters 1 (fun (parameters, remainingStack) ->
+        operation (parameters[0], remainingStack))
 
-let NativeAdd = binaryOperation "Add" (+)
-let NativeSubtract = binaryOperation "Subtract" (-)
-let NativeMultiply = binaryOperation "Multiply" (*)
-let NativeDivide = binaryOperation "Divide" (/)
-let NativeModulus = binaryOperation "Modulus" (%)
+let operationWithTwoParameters (operation: Value * Value * Value list -> Result<Value list, string>) (stack: Value list) =
+    stack
+    |> operationWithParameters 2 (fun (parameters, remainingStack) ->
+        operation (parameters[0], parameters[1], remainingStack))
+
+let NativeAdd (stack: Value list) =
+    stack
+    |> operationWithTwoParameters (fun (left, right, remainingStack) ->
+        match left, right with
+        | Integer firstInt, Integer secondInt -> Ok (Integer (secondInt + firstInt))
+        | Float firstFloat, Float secondFloat -> Ok (Float (secondFloat + firstFloat))
+        | String firstStr, String secondStr -> Ok (String (secondStr + firstStr))
+        | _ -> Error "Values do not support operator (+)"
+        |> Result.map (fun value -> value::remainingStack))
+
+let NativeSubtract (stack: Value list) =
+    stack
+    |> operationWithTwoParameters (fun (left, right, remainingStack) ->
+        match left, right with
+        | Integer firstInt, Integer secondInt -> Ok (Integer (secondInt - firstInt))
+        | Float firstFloat, Float secondFloat -> Ok (Float (secondFloat - firstFloat))
+        | _ -> Error "Values do not support operator (-)"
+        |> Result.map (fun value -> value::remainingStack))
+
+let NativeMultiply (stack: Value list) =
+    stack
+    |> operationWithTwoParameters (fun (left, right, remainingStack) ->
+        match left, right with
+        | Integer firstInt, Integer secondInt -> Ok (Integer (secondInt * firstInt))
+        | Float firstFloat, Float secondFloat -> Ok (Float (secondFloat * firstFloat))
+        | _ -> Error "Values do not support operator (*)"
+        |> Result.map (fun value -> value::remainingStack))
+
+let NativeDivide (stack: Value list) =
+    stack
+    |> operationWithTwoParameters (fun (left, right, remainingStack) ->
+        match left, right with
+        | Integer firstInt, Integer secondInt -> Ok (Integer (secondInt / firstInt))
+        | Float firstFloat, Float secondFloat -> Ok (Float (secondFloat / firstFloat))
+        | _ -> Error "Values do not support operator (/)"
+        |> Result.map (fun value -> value::remainingStack))
+
+let NativeModulus (stack: Value list) =
+    stack
+    |> operationWithTwoParameters (fun (left, right, remainingStack) ->
+        match left, right with
+        | Integer firstInt, Integer secondInt -> Ok (Integer (secondInt % firstInt))
+        | Float firstFloat, Float secondFloat -> Ok (Float (secondFloat % firstFloat))
+        | _ -> Error "Values do not support operator (%)"
+        |> Result.map (fun value -> value::remainingStack))
 
 let NativeDup (stack: Value list) =
     stack
-    |> getParameters 1
-    |> Result.bind (fun (parameters, remainingStack) ->
-        let token = parameters[0]
+    |> operationWithOneParameter (fun (token, remainingStack) ->
         Ok (token::token::remainingStack))
     
 let NativeDrop (stack: Value list) =
     stack
-    |> getParameters 1
-    |> Result.bind (fun (parameters, remainingStack) ->
-        printValue parameters[0]
+    |> operationWithOneParameter (fun (token, remainingStack) ->
+        printValue token
         Ok remainingStack)
     
 let NativeSwap (stack: Value list) =
     stack
-    |> getParameters 2
-    |> Result.bind (fun (parameters, remainingStack) ->
-        Ok (parameters[1]::parameters[0]::remainingStack))
+    |> operationWithTwoParameters (fun (first, second, remainingStack) ->
+        Ok (second::first::remainingStack))
+    
+let NativeClear (_: Value list) =
+    Ok []
 
 let NativeWords = [
     { Symbol = "+"; Instructions = Native NativeAdd }
@@ -55,4 +98,5 @@ let NativeWords = [
     { Symbol = "drop"; Instructions = Native NativeDrop }
     { Symbol = "."; Instructions = Native NativeDrop }
     { Symbol = "swap"; Instructions = Native NativeSwap }
+    { Symbol = "clear"; Instructions = Native NativeClear }
 ]

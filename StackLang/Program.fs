@@ -5,7 +5,9 @@ open StackLang.Interpreter
 let runFile file =
     let lines = File.ReadAllLines(file)
     let input = String.concat " " lines
-    Interpreter.run (Interpreter.createInterpreter ()) input |> ignore
+    Interpreter.createInterpreter ()
+    |> Interpreter.run input
+    |> ignore
 
 let runRepl () =
     let mutable quit = false
@@ -16,7 +18,7 @@ let runRepl () =
         if input = "#quit" then
             quit <- true
         else
-            let result = Interpreter.run interpreter input
+            let result = Interpreter.run input interpreter
             match result with
             | Ok nextState ->
                 interpreter <- nextState
