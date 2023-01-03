@@ -38,6 +38,13 @@ module Interpreter =
         |> Result.bind (fun (word, remainingTokens) ->
             let newDictionary = interpreter.Dictionary.Add(word.Symbol, word)
             Ok ({ interpreter with Dictionary = newDictionary }, remainingTokens))
+        
+    let tokensToArray tokens =
+        tokens |> List.toArray |> Array
+
+    let compileArray interpreter tokens =
+        compile tokens "}" tokensToArray
+        |> Result.bind
 
     let push value interpreter =
         { interpreter with Stack = value::interpreter.Stack }
