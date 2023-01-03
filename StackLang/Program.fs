@@ -27,6 +27,7 @@ let runRepl () =
             printfn "\n--- Data stack:"
             interpreter.Stack
             |> List.iter Interpreter.printValue
+            printfn "\n"
 
 let args = Environment.GetCommandLineArgs()
 match args with

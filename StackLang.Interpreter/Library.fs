@@ -16,12 +16,29 @@ module Interpreter =
             |> Map.ofList
         { Dictionary = vocab; Stack = [] }
 
-    let compileWord interpreter word =
-        let symbol = List.head word
-        let instructions = List.tail word
-        let newDictionary = interpreter.Dictionary.Add(symbol, { Symbol = symbol; Instructions = Compiled instructions })
-        { interpreter with Dictionary = newDictionary }
+    let compile tokens endToken valueFunc =
+        let tokensToCompile =
+            tokens
+            |> List.skip 1
+            |> List.takeWhile (fun t -> not (t = endToken))
+        if tokens.Length = tokensToCompile.Length then
+            Error $"Expected \"{endToken}\" but got end of input"
+        else
+            let value = valueFunc tokensToCompile
+            let remainingTokens = tokens |> List.skip (tokensToCompile.Length + 2)
+            Ok (value, remainingTokens)
+            
+    let tokensToWord tokens =
+        let symbol = List.head tokens
+        let instructions = List.tail tokens
+        { Symbol = symbol; Instructions = Compiled instructions }
         
+    let compileWord interpreter tokens =
+        compile tokens ";" tokensToWord
+        |> Result.bind (fun (word, remainingTokens) ->
+            let newDictionary = interpreter.Dictionary.Add(word.Symbol, word)
+            Ok ({ interpreter with Dictionary = newDictionary }, remainingTokens))
+
     let push value interpreter =
         { interpreter with Stack = value::interpreter.Stack }
 
@@ -66,29 +83,21 @@ module Interpreter =
         let value = String (token.Substring(1, token.Length - 2))
         interpreter |> push value |> Ok
 
-    let rec next (tokens: string list) interpreter =
+    let rec next (interpreter, tokens: string list) =
         match tokens with
         | nextToken::remainingTokens ->
             match nextToken with
             | ":" ->
-                let word =
-                    tokens
-                    |> List.skip 1
-                    |> List.takeWhile (fun t -> not (t = ";"))
-                if tokens.Length = word.Length then
-                    Error "Expected \";\" but got end of input"
-                else
-                    let result = compileWord interpreter word
-                    let remainingTokens = tokens |> List.skip (word.Length + 2)
-                    next remainingTokens result
+                compileWord interpreter tokens
+                |> Result.bind next
             | token ->
-                let result = execute token interpreter
-                result |> Result.bind (next remainingTokens)
+                execute token interpreter
+                |> Result.bind (fun result -> next (result, remainingTokens))
         | [] ->
             Ok interpreter
             
     let run (input: string) interpreter =
         // TODO: Need more complex tokenization to handle strings with spaces
         let tokens = input.Split " " |> Array.toList
-        next tokens interpreter
+        next (interpreter, tokens)
 
