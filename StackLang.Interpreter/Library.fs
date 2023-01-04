@@ -10,57 +10,69 @@ module Interpreter =
     let printValue = Models.printValue
 
     let createInterpreter () =
-        let vocab =
-            NativeWords
-            |> List.map (fun w -> (w.Symbol, w))
-            |> Map.ofList
+        let vocab = NativeWords |> List.map (fun w -> (w.Symbol, w)) |> Map.ofList
         { Dictionary = vocab; Stack = [] }
 
     let compile tokens endToken valueFunc =
         let tokensToCompile =
-            tokens
-            |> List.skip 1
-            |> List.takeWhile (fun t -> not (t = endToken))
+            tokens |> List.skip 1 |> List.takeWhile (fun t -> not (t = endToken))
+
         if tokens.Length = tokensToCompile.Length then
             Error $"Expected \"{endToken}\" but got end of input"
         else
             let value = valueFunc tokensToCompile
             let remainingTokens = tokens |> List.skip (tokensToCompile.Length + 2)
-            Ok (value, remainingTokens)
-            
+            Ok(value, remainingTokens)
+
     let tokensToWord tokens =
         let symbol = List.head tokens
         let instructions = List.tail tokens
-        { Symbol = symbol; Instructions = Compiled instructions }
-        
+
+        { Symbol = symbol
+          Instructions = Compiled instructions }
+
     let compileWord interpreter tokens =
         compile tokens ";" tokensToWord
         |> Result.bind (fun (word, remainingTokens) ->
             let newDictionary = interpreter.Dictionary.Add(word.Symbol, word)
-            Ok ({ interpreter with Dictionary = newDictionary }, remainingTokens))
-        
-    let tokensToArray tokens =
-        tokens |> List.toArray |> Array
+            Ok({ interpreter with Dictionary = newDictionary }, remainingTokens))
 
-    let compileArray interpreter tokens =
-        compile tokens "}" tokensToArray
-        |> Result.bind
+    let parseInteger (token: string) =
+        match Int32.TryParse(token) with
+        | true, number -> Integer number |> Ok
+        | _ -> Error $"Unable to parse literal: {token}"
+
+    let parseFloat (token: string) =
+        match Double.TryParse(token) with
+        | true, number -> Float number |> Ok
+        | _ -> Error $"Unable to parse float: {token}"
+
+    let parseString (token: string) =
+        String(token.Substring(1, token.Length - 2)) |> Ok
+
+    let parseValueFromPrimitive (token: string) =
+        match token with
+        | str when Regex.IsMatch(str, "^\\\"(.*)\\\"$") -> // ^\"(.*)\"$
+            parseString str
+        | f when f.Contains(".") -> parseFloat f
+        | _ -> parseInteger token
+
+    let tokensToArray tokens =
+        let valuesResults = tokens |> List.map parseValueFromPrimitive
+        valuesResults
+
+    // let compileArray interpreter tokens =
+    //     compile tokens "}" tokensToArray |> Result.bind
 
     let push value interpreter =
-        { interpreter with Stack = value::interpreter.Stack }
+        { interpreter with Stack = value :: interpreter.Stack }
 
     let rec execute (token: string) interpreter =
         match interpreter.Dictionary.TryGetValue(token) with
-        | true, word ->
-            executeWord interpreter word
+        | true, word -> executeWord interpreter word
         | _ ->
-            match token with
-            | str when Regex.IsMatch(str, "^\\\"(.*)\\\"$") -> // ^\"(.*)\"$
-                executeString interpreter str
-            | f when f.Contains(".") ->
-                executeFloat interpreter f
-            | _ ->
-                executeInteger interpreter token
+            let value = parseValueFromPrimitive token
+            value |> Result.map (fun v -> push v interpreter)
 
     and executeWord interpreter word =
         match word.Instructions with
@@ -68,43 +80,20 @@ module Interpreter =
             nativeWord interpreter.Stack
             |> Result.map (fun newStack -> { interpreter with Stack = newStack })
         | Compiled compiledWord ->
-            compiledWord |> List.fold (fun lastResult nextToken ->
-                Result.bind (execute nextToken) lastResult)
-                (Ok interpreter)
-
-    and executeInteger interpreter (token: string) =
-        match Int32.TryParse(token) with
-        | true, number ->
-            interpreter |> push (Integer number) |> Ok
-        | _ ->
-            Error $"Unable to parse literal: {token}"
-
-    and executeFloat interpreter (token: string) =
-        match Double.TryParse(token) with
-        | true, number ->
-            interpreter |> push (Float number) |> Ok
-        | _ ->
-            Error $"Unable to parse float: {token}"
-
-    and executeString interpreter (token: string) =
-        let value = String (token.Substring(1, token.Length - 2))
-        interpreter |> push value |> Ok
+            compiledWord
+            |> List.fold (fun lastResult nextToken -> Result.bind (execute nextToken) lastResult) (Ok interpreter)
 
     let rec next (interpreter, tokens: string list) =
         match tokens with
-        | nextToken::remainingTokens ->
+        | nextToken :: remainingTokens ->
             match nextToken with
-            | ":" ->
-                compileWord interpreter tokens
-                |> Result.bind next
+            | ":" -> compileWord interpreter tokens |> Result.bind next
             | token ->
                 execute token interpreter
                 |> Result.bind (fun result -> next (result, remainingTokens))
-        | [] ->
-            Ok interpreter
-            
+        | [] -> Ok interpreter
+
     let run (input: string) interpreter =
         // TODO: Need more complex tokenization to handle strings with spaces
         let tokens = input.Split " " |> Array.toList
         next (interpreter, tokens)
-
