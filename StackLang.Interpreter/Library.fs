@@ -41,6 +41,15 @@ module Interpreter =
         |> Result.bind (fun (word, remainingTokens) ->
             let newDictionary = interpreter.Dictionary.Add(word.Symbol, word)
             ({ interpreter with Dictionary = newDictionary }, remainingTokens) |> Ok)
+        
+    let tokensToQuotation tokens =
+        tokens |> Quotation |> Ok
+        
+    let compileQuotation interpreter tokens =
+        compile tokens "]" tokensToQuotation
+        |> Result.bind (fun (quotation, remainingTokens) ->
+            let updatedInterpreter = push quotation interpreter
+            (updatedInterpreter, remainingTokens) |> Ok)
 
     let parseInteger (token: string) =
         match Int32.TryParse(token) with
@@ -107,6 +116,7 @@ module Interpreter =
         | nextToken :: remainingTokens ->
             match nextToken with
             | ":" -> compileWord interpreter tokens |> Result.bind next
+            | "[" -> compileQuotation interpreter tokens |> Result.bind next
             | "{" -> compileArray interpreter tokens |> Result.bind next
             | token ->
                 execute token interpreter
@@ -115,5 +125,6 @@ module Interpreter =
 
     let run (input: string) interpreter =
         // TODO: Need more complex tokenization to handle strings with spaces
+        // TODO: Need to handle nested quotations
         let tokens = input.Split " " |> Array.toList
         next (interpreter, tokens)
