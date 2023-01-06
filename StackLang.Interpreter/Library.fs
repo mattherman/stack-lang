@@ -13,6 +13,9 @@ module Interpreter =
         let vocab = NativeWords |> List.map (fun w -> (w.Symbol, w)) |> Map.ofList
         { Dictionary = vocab; Stack = [] }
 
+    let push value interpreter =
+        { interpreter with Stack = value :: interpreter.Stack }
+
     let compile tokens endToken valueFunc =
         let tokensToCompile =
             tokens |> List.skip 1 |> List.takeWhile (fun t -> not (t = endToken))
@@ -20,9 +23,10 @@ module Interpreter =
         if tokens.Length = tokensToCompile.Length then
             Error $"Expected \"{endToken}\" but got end of input"
         else
-            let value = valueFunc tokensToCompile
-            let remainingTokens = tokens |> List.skip (tokensToCompile.Length + 2)
-            Ok(value, remainingTokens)
+            valueFunc tokensToCompile
+            |> Result.map (fun value ->
+                let remainingTokens = tokens |> List.skip (tokensToCompile.Length + 2)
+                (value, remainingTokens))
 
     let tokensToWord tokens =
         let symbol = List.head tokens
@@ -30,12 +34,13 @@ module Interpreter =
 
         { Symbol = symbol
           Instructions = Compiled instructions }
+        |> Ok
 
     let compileWord interpreter tokens =
         compile tokens ";" tokensToWord
         |> Result.bind (fun (word, remainingTokens) ->
             let newDictionary = interpreter.Dictionary.Add(word.Symbol, word)
-            Ok({ interpreter with Dictionary = newDictionary }, remainingTokens))
+            ({ interpreter with Dictionary = newDictionary }, remainingTokens) |> Ok)
 
     let parseInteger (token: string) =
         match Int32.TryParse(token) with
@@ -57,15 +62,29 @@ module Interpreter =
         | f when f.Contains(".") -> parseFloat f
         | _ -> parseInteger token
 
+    let collectResults (list: Result<'a, 'e> list) : Result<'a list, 'e> =
+        List.foldBack
+            (fun next acc ->
+                match acc with
+                | Ok results ->
+                    match next with
+                    | Ok nextResult -> Ok(nextResult :: results)
+                    | Error msg -> Error msg
+                | Error msg -> Error msg)
+            list
+            (Ok [])
+
     let tokensToArray tokens =
-        let valuesResults = tokens |> List.map parseValueFromPrimitive
-        valuesResults
+        tokens
+        |> List.map parseValueFromPrimitive
+        |> collectResults
+        |> Result.map (List.toArray >> Array)
 
-    // let compileArray interpreter tokens =
-    //     compile tokens "}" tokensToArray |> Result.bind
-
-    let push value interpreter =
-        { interpreter with Stack = value :: interpreter.Stack }
+    let compileArray interpreter tokens =
+        compile tokens "}" tokensToArray
+        |> Result.bind (fun (array, remainingTokens) ->
+            let updatedInterpreter = push array interpreter
+            (updatedInterpreter, remainingTokens) |> Ok)
 
     let rec execute (token: string) interpreter =
         match interpreter.Dictionary.TryGetValue(token) with
@@ -88,6 +107,7 @@ module Interpreter =
         | nextToken :: remainingTokens ->
             match nextToken with
             | ":" -> compileWord interpreter tokens |> Result.bind next
+            | "{" -> compileArray interpreter tokens |> Result.bind next
             | token ->
                 execute token interpreter
                 |> Result.bind (fun result -> next (result, remainingTokens))

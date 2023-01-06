@@ -32,9 +32,14 @@ let assertError (expectedMessage: string) (result: Result<'a, string>) =
         msg |> should equal expectedMessage
 
 [<Fact>]
-let ``Can push values onto the stack`` () =
+let ``Can push primitive values onto the stack`` () =
     interpret "5 8.3 \"string\""
     |> assertStackMatches [ String "string"; Float 8.3; Integer 5 ]
+
+[<Fact>]
+let ``Can push arrays onto the stack`` () =
+    interpret "{ 1 2 3 }"
+    |> assertStackMatches [ Array [| Integer 1; Integer 2; Integer 3 |] ]
 
 [<Fact>]
 let ``Addition requires two elements`` () =

@@ -8,7 +8,7 @@ and Value =
     | Integer of int
     | Float of double
     | String of string
-    | Array of Value array
+    | Array of Value[]
 
 and Instructions =
     | Native of (Value list -> Result<Value list, string>)
