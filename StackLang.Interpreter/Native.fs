@@ -87,6 +87,8 @@ let NativeSwap (stack: Value list) =
     
 let NativeClear (_: Value list) =
     Ok []
+    
+
 
 let NativeWords = [
     { Symbol = "+"; Instructions = Native NativeAdd }

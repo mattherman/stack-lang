@@ -9,11 +9,12 @@ and Value =
     | Float of double
     | String of string
     | Array of Value[]
-    | Quotation of string list
+    | Quotation of Value list
+    | Word of Word
 
 and Instructions =
     | Native of (Value list -> Result<Value list, string>)
-    | Compiled of string list
+    | Compiled of Value list
 
 and Word =
     { Symbol: string
@@ -25,10 +26,11 @@ let rec valueToString value =
     | Float l -> $"%f{l}"
     | String s -> $"\"%s{s}\""
     | Array a ->
-        let arrayValues = String.concat " " (Array.map valueToString a)
-        $"{{ {arrayValues} }}"
+        let getTokens = Array.map valueToString >> String.concat " "
+        $"{{ {getTokens a} }}"
     | Quotation q ->
-        let quotationTokens = String.concat " " q
-        $"[ {quotationTokens} ]"
+        let getTokens = List.map valueToString >> String.concat " "
+        $"[ {getTokens q} ]"
+    | Word w -> $"%s{w.Symbol}"
 
 let rec printValue value = printfn $"%s{valueToString value}"

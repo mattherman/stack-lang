@@ -4,6 +4,7 @@ open Xunit
 open FsUnit.Xunit
 open StackLang.Interpreter
 open StackLang.Interpreter.Models
+open StackLang.Interpreter.Native
 
 let interpretMultiple (input: string list) =
     let interpreter = Interpreter.createInterpreter ()
@@ -41,7 +42,7 @@ let ``Can push arrays onto the stack`` () =
 [<Fact>]
 let ``Can push quotations onto the stack`` () =
     interpret "[ 1 + ]"
-    |> assertStackMatches [ Quotation [ "1"; "+" ] ]
+    |> assertStackMatches [ Quotation [ Integer 1; Word { Symbol = "+"; Instructions = Native NativeAdd } ] ]
 
 // [<Fact>]
 // let ``Can nest quotations`` () =
@@ -62,7 +63,7 @@ let ``Can add floats`` () =
 
 [<Fact>]
 let ``Can add strings`` () =
-    interpret "\"hello\" \"world\" +" |> assertStackMatches [ String "helloworld" ]
+    interpret "\"a\" \"r\" \"ray\" + +" |> assertStackMatches [ String "array" ]
 
 [<Fact>]
 let ``Subtraction requires two elements`` () =
