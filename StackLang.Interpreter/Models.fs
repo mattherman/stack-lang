@@ -10,7 +10,7 @@ and Value =
     | String of string
     | Array of Value[]
     | Quotation of Value list
-    | Word of Word
+    | Word of string
 
 and Instructions =
     | Native of (Value list -> Result<Value list, string>)
@@ -31,6 +31,6 @@ let rec valueToString value =
     | Quotation q ->
         let getTokens = List.map valueToString >> String.concat " "
         $"[ {getTokens q} ]"
-    | Word w -> $"%s{w.Symbol}"
+    | Word w -> $"%s{w}"
 
 let rec printValue value = printfn $"%s{valueToString value}"

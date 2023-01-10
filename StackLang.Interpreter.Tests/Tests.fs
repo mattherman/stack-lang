@@ -42,7 +42,7 @@ let ``Can push arrays onto the stack`` () =
 [<Fact>]
 let ``Can push quotations onto the stack`` () =
     interpret "[ 1 + ]"
-    |> assertStackMatches [ Quotation [ Integer 1; Word { Symbol = "+"; Instructions = Native NativeAdd } ] ]
+    |> assertStackMatches [ Quotation [ Integer 1; Word "+" ] ]
 
 // [<Fact>]
 // let ``Can nest quotations`` () =

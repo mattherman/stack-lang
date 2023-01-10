@@ -37,8 +37,8 @@ module Interpreter =
         | _ -> parseInteger token
 
     let parseValue (token: string) interpreter =
-        match interpreter.Dictionary.TryGetValue(token) with
-        | true, word -> Word word |> Ok
+        match interpreter.Dictionary.ContainsKey(token) with
+        | true-> Word token |> Ok
         | _ -> parseValueFromPrimitive token
 
     let collectResults (list: Result<'a, 'e> list) : Result<'a list, 'e> =
@@ -108,14 +108,17 @@ module Interpreter =
         | Word word -> executeWord interpreter word
         | _ -> push value interpreter |> Ok
 
-    and executeWord interpreter word : Result<Interpreter, string> =
-        match word.Instructions with
-        | Native nativeWord ->
-            nativeWord interpreter.Stack
-            |> Result.map (fun newStack -> { interpreter with Stack = newStack })
-        | Compiled compiledWord ->
-            compiledWord
-            |> List.fold (fun lastResult nextToken -> Result.bind (execute nextToken) lastResult) (Ok interpreter)
+    and executeWord interpreter wordSymbol : Result<Interpreter, string> =
+        match interpreter.Dictionary.TryGetValue(wordSymbol) with
+        | true, word ->
+            match word.Instructions with
+            | Native nativeWord ->
+                nativeWord interpreter.Stack
+                |> Result.map (fun newStack -> { interpreter with Stack = newStack })
+            | Compiled compiledWord ->
+                compiledWord
+                |> List.fold (fun lastResult nextToken -> Result.bind (execute nextToken) lastResult) (Ok interpreter)
+        | _ -> Error $"No word named {wordSymbol} found in current vocabulary"
 
     let rec next (interpreter, tokens: string list) =
         match tokens with
