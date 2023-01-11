@@ -203,6 +203,11 @@ let ``Can compare whether one value is less than or equal to another`` () =
     interpret "2 2 <=" |> assertStackMatches [ Boolean true ]
 
 [<Fact>]
-  let ``Can negate values`` () =
+let ``Can negate values`` () =
       interpret "t not" |> assertStackMatches [ Boolean false ]
       interpret "f not" |> assertStackMatches [ Boolean true ]
+
+[<Fact>]
+let ``Can perform conditional branching`` () =
+    interpret "t [ 1 ] [ 2 ] if" |> assertStackMatches [ Integer 1 ]
+    interpret "f [ 1 ] [ 2 ] if" |> assertStackMatches [ Integer 2 ]

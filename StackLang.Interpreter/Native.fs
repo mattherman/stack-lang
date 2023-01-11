@@ -24,6 +24,11 @@ let operationWithTwoParameters (operation: Value * Value * Value list -> Result<
     |> operationWithParameters 2 (fun (parameters, remainingStack) ->
         operation (parameters[0], parameters[1], remainingStack))
 
+let operationWithThreeParameters (operation: Value * Value * Value * Value list -> Result<Value list, string>) (stack: Value list) =
+    stack
+    |> operationWithParameters 3 (fun (parameters, remainingStack) ->
+        operation (parameters[0], parameters[1], parameters[2], remainingStack))
+
 let NativeAdd (_: Map<string, Word>) (stack: Value list) =
     stack
     |> operationWithTwoParameters (fun (left, right, remainingStack) ->
@@ -170,6 +175,18 @@ let NativeNot (_: Map<string, Word>) (stack: Value list) =
             result :: remainingStack |> Ok
         | _ -> Error "Not expected a boolean")
 
+let NativeIf (dictionary: Map<string, Word>) (stack: Value list) =
+    stack
+    |> operationWithThreeParameters (fun (falseQuotation, trueQuotation, boolean, remainingStack) ->
+        match boolean with
+        | Boolean b ->
+            let quotation = if b then trueQuotation else falseQuotation
+            match quotation with
+            | Quotation q ->
+                executeInstructions (Compiled q) dictionary remainingStack
+            | _ -> Error "Expected a quotation"
+        | _ -> Error "Expected a boolean")
+
 let NativeWords = [
     { Symbol = "+"; Instructions = Native NativeAdd }
     { Symbol = "-"; Instructions = Native NativeSubtract }
@@ -190,4 +207,5 @@ let NativeWords = [
     { Symbol = ">="; Instructions = Native NativeGreaterThanOrEqual }
     { Symbol = "<="; Instructions = Native NativeLessThanOrEqual }
     { Symbol = "not"; Instructions = Native NativeNot }
+    { Symbol = "if"; Instructions = Native NativeIf }
 ]
