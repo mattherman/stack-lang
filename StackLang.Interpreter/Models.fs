@@ -34,3 +34,16 @@ let rec valueToString value =
     | Word w -> $"%s{w}"
 
 let rec printValue value = printfn $"%s{valueToString value}"
+
+module List =
+    let collectResults (list: Result<'a, 'e> list) : Result<'a list, 'e> =
+        List.foldBack
+            (fun next acc ->
+                match acc with
+                | Ok results ->
+                    match next with
+                    | Ok nextResult -> Ok(nextResult :: results)
+                    | Error msg -> Error msg
+                | Error msg -> Error msg)
+            list
+            (Ok [])

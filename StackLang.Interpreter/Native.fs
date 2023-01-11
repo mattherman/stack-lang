@@ -93,9 +93,27 @@ let NativeEval (dictionary: Map<string, Word>) (stack: Value list) =
     stack
     |> operationWithOneParameter (fun (quotation, remainingStack) ->
         match quotation with
-        | Quotation values ->
-            executeInstructions (Compiled values) dictionary remainingStack
+        | Quotation instructions ->
+            executeInstructions (Compiled instructions) dictionary remainingStack
         | _ -> Error "Value does not support eval")
+
+let NativeMap (dictionary: Map<string, Word>) (stack: Value list) =
+    stack
+    |> operationWithTwoParameters (fun (quotation, array, remainingStack) ->
+        match quotation with
+        | Quotation instructions ->
+            match array with
+            | Array arr ->
+                arr
+                |> Array.toList
+                |> List.map (fun value ->
+                    executeInstructions (Compiled instructions) dictionary [ value ]
+                    |> Result.map List.head)
+                |> List.collectResults
+                |> Result.map (List.toArray >> Array)
+                |> Result.map (fun mappedArray -> mappedArray :: remainingStack)
+            | _ -> Error "Map expected an array"
+        | _ -> Error "Map expected a quotation")
 
 let NativeWords = [
     { Symbol = "+"; Instructions = Native NativeAdd }
@@ -109,4 +127,5 @@ let NativeWords = [
     { Symbol = "swap"; Instructions = Native NativeSwap }
     { Symbol = "clear"; Instructions = Native NativeClear }
     { Symbol = "eval"; Instructions = Native NativeEval }
+    { Symbol = "map"; Instructions = Native NativeMap }
 ]

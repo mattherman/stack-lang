@@ -24,10 +24,11 @@ let runRepl () =
                 interpreter <- nextState
             | Error msg ->
                 printfn $"Error: %s{msg}"
-            printfn "\n--- Data stack:"
-            interpreter.Stack
-            |> List.iter Interpreter.printValue
-            printfn "\n"
+            if interpreter.Stack.Length > 0 then
+                printfn "\n--- Data stack:"
+                interpreter.Stack
+                |> List.iter Interpreter.printValue
+                printfn "\n"
 
 let args = Environment.GetCommandLineArgs()
 match args with

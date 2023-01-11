@@ -42,22 +42,10 @@ module Interpreter =
         | true-> Word token |> Ok
         | _ -> parseValueFromPrimitive token
 
-    let collectResults (list: Result<'a, 'e> list) : Result<'a list, 'e> =
-        List.foldBack
-            (fun next acc ->
-                match acc with
-                | Ok results ->
-                    match next with
-                    | Ok nextResult -> Ok(nextResult :: results)
-                    | Error msg -> Error msg
-                | Error msg -> Error msg)
-            list
-            (Ok [])
-
     let tokensToArray tokens =
         tokens
         |> List.map parseValueFromPrimitive
-        |> collectResults
+        |> List.collectResults
         |> Result.map (List.toArray >> Array)
 
     let compile tokens endToken valueFunc =
@@ -76,7 +64,7 @@ module Interpreter =
         let symbol = List.head tokens
         List.tail tokens
         |> List.map (fun t -> parseValue t interpreter)
-        |> collectResults
+        |> List.collectResults
         |> Result.map (fun values ->
             { Symbol = symbol; Instructions = Compiled values })
 
@@ -89,7 +77,7 @@ module Interpreter =
     let tokensToQuotation interpreter tokens =
         tokens
         |> List.map (fun t -> parseValue t interpreter)
-        |> collectResults
+        |> List.collectResults
         |> Result.map Quotation
 
     let compileQuotation interpreter tokens =
