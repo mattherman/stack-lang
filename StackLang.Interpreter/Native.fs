@@ -135,6 +135,15 @@ let NativeGreaterThanOrEqual (_: Map<string, Word>) (stack: Value list) =
 let NativeLessThanOrEqual (_: Map<string, Word>) (stack: Value list) =
     booleanOperation (<=) stack
 
+let NativeNot (_: Map<string, Word>) (stack: Value list) =
+    stack
+    |> operationWithOneParameter (fun (boolean, remainingStack) ->
+        match boolean with
+        | Boolean value ->
+            let result = not value |> Boolean
+            result :: remainingStack |> Ok
+        | _ -> Error "Not expected a boolean")
+
 let NativeWords = [
     { Symbol = "+"; Instructions = Native NativeAdd }
     { Symbol = "-"; Instructions = Native NativeSubtract }
@@ -153,4 +162,5 @@ let NativeWords = [
     { Symbol = "<"; Instructions = Native NativeLessThan }
     { Symbol = ">="; Instructions = Native NativeGreaterThanOrEqual }
     { Symbol = "<="; Instructions = Native NativeLessThanOrEqual }
+    { Symbol = "not"; Instructions = Native NativeNot }
 ]

@@ -196,3 +196,8 @@ let ``Can compare whether one value is less than or equal to another`` () =
     interpret "1 2 <=" |> assertStackMatches [ Boolean true ]
     interpret "2 1 <=" |> assertStackMatches [ Boolean false ]
     interpret "2 2 <=" |> assertStackMatches [ Boolean true ]
+
+[<Fact>]
+  let ``Can negate values`` () =
+      interpret "t not" |> assertStackMatches [ Boolean false ]
+      interpret "f not" |> assertStackMatches [ Boolean true ]
