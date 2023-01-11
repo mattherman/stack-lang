@@ -1,6 +1,7 @@
 module StackLang.Interpreter.Native
 
 open Models
+open ExecutionEngine
 
 let getParameters count (stack: Value list) =
     if stack.Length >= count then
@@ -23,7 +24,7 @@ let operationWithTwoParameters (operation: Value * Value * Value list -> Result<
     |> operationWithParameters 2 (fun (parameters, remainingStack) ->
         operation (parameters[0], parameters[1], remainingStack))
 
-let NativeAdd (stack: Value list) =
+let NativeAdd (_: Map<string, Word>) (stack: Value list) =
     stack
     |> operationWithTwoParameters (fun (left, right, remainingStack) ->
         match left, right with
@@ -33,7 +34,7 @@ let NativeAdd (stack: Value list) =
         | _ -> Error "Values do not support operator (+)"
         |> Result.map (fun value -> value::remainingStack))
 
-let NativeSubtract (stack: Value list) =
+let NativeSubtract (_: Map<string, Word>) (stack: Value list) =
     stack
     |> operationWithTwoParameters (fun (left, right, remainingStack) ->
         match left, right with
@@ -42,7 +43,7 @@ let NativeSubtract (stack: Value list) =
         | _ -> Error "Values do not support operator (-)"
         |> Result.map (fun value -> value::remainingStack))
 
-let NativeMultiply (stack: Value list) =
+let NativeMultiply (_: Map<string, Word>) (stack: Value list) =
     stack
     |> operationWithTwoParameters (fun (left, right, remainingStack) ->
         match left, right with
@@ -51,7 +52,7 @@ let NativeMultiply (stack: Value list) =
         | _ -> Error "Values do not support operator (*)"
         |> Result.map (fun value -> value::remainingStack))
 
-let NativeDivide (stack: Value list) =
+let NativeDivide (_: Map<string, Word>) (stack: Value list) =
     stack
     |> operationWithTwoParameters (fun (left, right, remainingStack) ->
         match left, right with
@@ -60,7 +61,7 @@ let NativeDivide (stack: Value list) =
         | _ -> Error "Values do not support operator (/)"
         |> Result.map (fun value -> value::remainingStack))
 
-let NativeModulus (stack: Value list) =
+let NativeModulus (_: Map<string, Word>) (stack: Value list) =
     stack
     |> operationWithTwoParameters (fun (left, right, remainingStack) ->
         match left, right with
@@ -69,26 +70,32 @@ let NativeModulus (stack: Value list) =
         | _ -> Error "Values do not support operator (%)"
         |> Result.map (fun value -> value::remainingStack))
 
-let NativeDup (stack: Value list) =
+let NativeDup (_: Map<string, Word>) (stack: Value list) =
     stack
     |> operationWithOneParameter (fun (token, remainingStack) ->
         Ok (token::token::remainingStack))
     
-let NativeDrop (stack: Value list) =
+let NativeDrop (_: Map<string, Word>) (stack: Value list) =
     stack
     |> operationWithOneParameter (fun (token, remainingStack) ->
         printValue token
         Ok remainingStack)
     
-let NativeSwap (stack: Value list) =
+let NativeSwap (_: Map<string, Word>) (stack: Value list) =
     stack
     |> operationWithTwoParameters (fun (first, second, remainingStack) ->
         Ok (second::first::remainingStack))
     
-let NativeClear (_: Value list) =
+let NativeClear (_: Map<string, Word>) (_: Value list) =
     Ok []
     
-
+let NativeEval (dictionary: Map<string, Word>) (stack: Value list) =
+    stack
+    |> operationWithOneParameter (fun (quotation, remainingStack) ->
+        match quotation with
+        | Quotation values ->
+            executeInstructions (Compiled values) dictionary remainingStack
+        | _ -> Error "Value does not support eval")
 
 let NativeWords = [
     { Symbol = "+"; Instructions = Native NativeAdd }
@@ -101,4 +108,5 @@ let NativeWords = [
     { Symbol = "."; Instructions = Native NativeDrop }
     { Symbol = "swap"; Instructions = Native NativeSwap }
     { Symbol = "clear"; Instructions = Native NativeClear }
+    { Symbol = "eval"; Instructions = Native NativeEval }
 ]

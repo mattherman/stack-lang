@@ -13,7 +13,7 @@ and Value =
     | Word of string
 
 and Instructions =
-    | Native of (Value list -> Result<Value list, string>)
+    | Native of (Map<string, Word> -> Value list -> Result<Value list, string>)
     | Compiled of Value list
 
 and Word =

@@ -6,6 +6,7 @@ module Interpreter =
     open System.Text.RegularExpressions
     open Models
     open Native
+    open ExecutionEngine
 
     let printValue = Models.printValue
 
@@ -103,23 +104,6 @@ module Interpreter =
             let updatedInterpreter = push array interpreter
             (updatedInterpreter, remainingTokens) |> Ok)
 
-    let rec execute (value: Value) interpreter =
-        match value with
-        | Word word -> executeWord interpreter word
-        | _ -> push value interpreter |> Ok
-
-    and executeWord interpreter wordSymbol : Result<Interpreter, string> =
-        match interpreter.Dictionary.TryGetValue(wordSymbol) with
-        | true, word ->
-            match word.Instructions with
-            | Native nativeWord ->
-                nativeWord interpreter.Stack
-                |> Result.map (fun newStack -> { interpreter with Stack = newStack })
-            | Compiled compiledWord ->
-                compiledWord
-                |> List.fold (fun lastResult nextToken -> Result.bind (execute nextToken) lastResult) (Ok interpreter)
-        | _ -> Error $"No word named {wordSymbol} found in current vocabulary"
-
     let rec next (interpreter, tokens: string list) =
         match tokens with
         | nextToken :: remainingTokens ->
@@ -129,8 +113,9 @@ module Interpreter =
             | "{" -> compileArray interpreter tokens |> Result.bind next
             | token ->
                 parseValue token interpreter
-                |> Result.bind (fun value -> execute value interpreter)
-                |> Result.bind (fun result -> next (result, remainingTokens))
+                |> Result.bind (fun value -> execute value interpreter.Dictionary interpreter.Stack)
+                |> Result.bind (fun result ->
+                    next ({ interpreter with Stack = result }, remainingTokens))
         | [] -> Ok interpreter
 
     let run (input: string) interpreter =
