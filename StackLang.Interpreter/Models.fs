@@ -8,6 +8,7 @@ and Value =
     | Integer of int
     | Float of double
     | String of string
+    | Boolean of bool
     | Array of Value[]
     | Quotation of Value list
     | Word of string
@@ -25,6 +26,9 @@ let rec valueToString value =
     | Integer i -> $"%d{i}"
     | Float l -> $"%f{l}"
     | String s -> $"\"%s{s}\""
+    | Boolean b ->
+        let value = if b then "t" else "f"
+        $"%s{value}"
     | Array a ->
         let getTokens = Array.map valueToString >> String.concat " "
         $"{{ {getTokens a} }}"

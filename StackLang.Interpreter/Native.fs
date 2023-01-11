@@ -115,6 +115,26 @@ let NativeMap (dictionary: Map<string, Word>) (stack: Value list) =
             | _ -> Error "Map expected an array"
         | _ -> Error "Map expected a quotation")
 
+let booleanOperation op =
+    operationWithTwoParameters (fun (left, right, remainingStack) ->
+        let result = (op right left) |> Boolean
+        result :: remainingStack |> Ok)
+
+let NativeEquals (_: Map<string, Word>) (stack: Value list) =
+    booleanOperation (=) stack
+
+let NativeGreaterThan (_: Map<string, Word>) (stack: Value list) =
+    booleanOperation (>) stack
+
+let NativeLessThan (_: Map<string, Word>) (stack: Value list) =
+    booleanOperation (<) stack
+
+let NativeGreaterThanOrEqual (_: Map<string, Word>) (stack: Value list) =
+    booleanOperation (>=) stack
+
+let NativeLessThanOrEqual (_: Map<string, Word>) (stack: Value list) =
+    booleanOperation (<=) stack
+
 let NativeWords = [
     { Symbol = "+"; Instructions = Native NativeAdd }
     { Symbol = "-"; Instructions = Native NativeSubtract }
@@ -128,4 +148,9 @@ let NativeWords = [
     { Symbol = "clear"; Instructions = Native NativeClear }
     { Symbol = "eval"; Instructions = Native NativeEval }
     { Symbol = "map"; Instructions = Native NativeMap }
+    { Symbol = "="; Instructions = Native NativeEquals }
+    { Symbol = ">"; Instructions = Native NativeGreaterThan }
+    { Symbol = "<"; Instructions = Native NativeLessThan }
+    { Symbol = ">="; Instructions = Native NativeGreaterThanOrEqual }
+    { Symbol = "<="; Instructions = Native NativeLessThanOrEqual }
 ]

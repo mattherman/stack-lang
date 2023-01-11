@@ -4,7 +4,6 @@ open Xunit
 open FsUnit.Xunit
 open StackLang.Interpreter
 open StackLang.Interpreter.Models
-open StackLang.Interpreter.Native
 
 let interpretMultiple (input: string list) =
     let interpreter = Interpreter.createInterpreter ()
@@ -31,8 +30,8 @@ let assertError (expectedMessage: string) (result: Result<'a, string>) =
 
 [<Fact>]
 let ``Can push primitive values onto the stack`` () =
-    interpret "5 8.3 \"string\""
-    |> assertStackMatches [ String "string"; Float 8.3; Integer 5 ]
+    interpret "5 8.3 \"string\" t"
+    |> assertStackMatches [ Boolean true; String "string"; Float 8.3; Integer 5 ]
 
 [<Fact>]
 let ``Can push arrays onto the stack`` () =
@@ -170,4 +169,30 @@ let ``Can evaluate quotations`` () =
 let ``Can map arrays`` () =
     interpret "{ 1 2 3 } [ 1 + ] map"
     |> assertStackMatches [ Array [| Integer 2; Integer 3; Integer 4 |] ]
-  
+
+[<Fact>]
+let ``Can compare two values for equality`` () =
+    interpret "1 1 =" |> assertStackMatches [ Boolean true ]
+    interpret "1 2 =" |> assertStackMatches [ Boolean false ]
+
+[<Fact>]
+let ``Can compare whether one value is greater than another`` () =
+    interpret "2 1 >" |> assertStackMatches [ Boolean true ]
+    interpret "1 2 >" |> assertStackMatches [ Boolean false ]
+
+[<Fact>]
+let ``Can compare whether one value is less than another`` () =
+    interpret "1 2 <" |> assertStackMatches [ Boolean true ]
+    interpret "2 1 <" |> assertStackMatches [ Boolean false ]
+
+[<Fact>]
+let ``Can compare whether one value is greater than or equal to another`` () =
+    interpret "2 1 >=" |> assertStackMatches [ Boolean true ]
+    interpret "1 2 >=" |> assertStackMatches [ Boolean false ]
+    interpret "2 2 >=" |> assertStackMatches [ Boolean true ]
+
+[<Fact>]
+let ``Can compare whether one value is less than or equal to another`` () =
+    interpret "1 2 <=" |> assertStackMatches [ Boolean true ]
+    interpret "2 1 <=" |> assertStackMatches [ Boolean false ]
+    interpret "2 2 <=" |> assertStackMatches [ Boolean true ]

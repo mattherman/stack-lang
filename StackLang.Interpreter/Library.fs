@@ -30,12 +30,22 @@ module Interpreter =
     let parseString (token: string) =
         String(token.Substring(1, token.Length - 2)) |> Ok
 
+    let parseBoolean (token: string) =
+        match token with
+        | "t" -> Boolean true |> Ok
+        | "f" -> Boolean false |> Ok
+        | _ -> Error $"Unable to parse boolean: {token}"
+
     let parseValueFromPrimitive (token: string) =
         match token with
-        | str when Regex.IsMatch(str, "^\\\"(.*)\\\"$") -> // ^\"(.*)\"$
-            parseString str
-        | f when f.Contains(".") -> parseFloat f
-        | _ -> parseInteger token
+        | b when Regex.IsMatch(b, "^(t|f)$") ->
+            parseBoolean b
+        | s when Regex.IsMatch(s, "^\\\"(.*)\\\"$") -> // ^\"(.*)\"$
+            parseString s
+        | f when f.Contains(".") ->
+            parseFloat f
+        | i ->
+            parseInteger i
 
     let parseValue (token: string) interpreter =
         match interpreter.Dictionary.ContainsKey(token) with
