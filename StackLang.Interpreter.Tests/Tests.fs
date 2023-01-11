@@ -161,3 +161,13 @@ let ``Can clear the stack`` () =
 let ``Can define and execute custom words`` () =
     interpretMultiple [ ": square dup * ;"; "5 square" ]
     |> assertStackMatches [ Integer 25 ]
+
+[<Fact>]
+let ``Can evaluate quotations`` () =
+    interpret "1 [ 2 + ] eval" |> assertStackMatches [ Integer 3 ]
+
+[<Fact>]
+let ``Can map arrays`` () =
+    interpret "{ 1 2 3 } [ 1 + ] map"
+    |> assertStackMatches [ Array [| Integer 2; Integer 3; Integer 4 |] ]
+  
