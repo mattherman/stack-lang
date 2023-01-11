@@ -115,6 +115,32 @@ let NativeMap (dictionary: Map<string, Word>) (stack: Value list) =
             | _ -> Error "Map expected an array"
         | _ -> Error "Map expected a quotation")
 
+let NativeFilter (dictionary: Map<string, Word>) (stack: Value list) =
+    stack
+    |> operationWithTwoParameters (fun (quotation, array, remainingStack) ->
+        match quotation with
+        | Quotation instructions ->
+            match array with
+            | Array arr ->
+                arr
+                |> Array.toList
+                |> List.map (fun value ->
+                    executeInstructions (Compiled instructions) dictionary [ value ]
+                    |> Result.map List.head
+                    |> Result.map (fun boolean -> (value, boolean)))
+                |> List.collectResults
+                |> Result.map (fun values ->
+                    values
+                    |> List.filter (fun (_, result) ->
+                        match result with
+                        | Boolean b -> b
+                        | _ -> false)
+                    |> List.map fst)
+                |> Result.map (List.toArray >> Array)
+                |> Result.map (fun mappedArray -> mappedArray :: remainingStack)
+            | _ -> Error "Filter expected an array"
+        | _ -> Error "Filter expected a quotation")
+
 let booleanOperation op =
     operationWithTwoParameters (fun (left, right, remainingStack) ->
         let result = (op right left) |> Boolean
@@ -157,6 +183,7 @@ let NativeWords = [
     { Symbol = "clear"; Instructions = Native NativeClear }
     { Symbol = "eval"; Instructions = Native NativeEval }
     { Symbol = "map"; Instructions = Native NativeMap }
+    { Symbol = "filter"; Instructions = Native NativeFilter }
     { Symbol = "="; Instructions = Native NativeEquals }
     { Symbol = ">"; Instructions = Native NativeGreaterThan }
     { Symbol = "<"; Instructions = Native NativeLessThan }

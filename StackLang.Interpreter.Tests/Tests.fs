@@ -171,6 +171,11 @@ let ``Can map arrays`` () =
     |> assertStackMatches [ Array [| Integer 2; Integer 3; Integer 4 |] ]
 
 [<Fact>]
+let ``Can filter arrays`` () =
+    interpret "{ 1 2 3 4 } [ 2 % 0 = ] filter"
+    |> assertStackMatches [ Array [| Integer 2; Integer 4 |] ]
+
+[<Fact>]
 let ``Can compare two values for equality`` () =
     interpret "1 1 =" |> assertStackMatches [ Boolean true ]
     interpret "1 2 =" |> assertStackMatches [ Boolean false ]
