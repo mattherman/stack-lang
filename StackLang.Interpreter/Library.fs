@@ -7,6 +7,7 @@ module Interpreter =
     open Models
     open Native
     open ExecutionEngine
+    open Tokenizer
 
     let printValue = Models.printValue
 
@@ -116,39 +117,6 @@ module Interpreter =
                 |> Result.bind (fun newStack ->
                     let updatedInterpreter = { interpreter with Stack = newStack }
                     next (updatedInterpreter, remainingTokens)))
-
-    let rec takeWhileNot (terminalValue: 'a) (list: List<'a>) =
-        match list with
-        | next::remaining ->
-            if next = terminalValue then
-                ([], remaining)
-            else
-                let values, unparsed = takeWhileNot terminalValue remaining
-                (next::values, unparsed)
-        | [] ->
-            ([], [])
-    // [ 1 "test it" ]
-    let rec tokenize (input: char list) : string list =
-        match input with
-        | [] -> []
-        | [lastCharacter] ->
-            [ lastCharacter |> string ]
-        | nextCharacter::remainingCharacters ->
-            match nextCharacter with
-            | ' ' -> tokenize remainingCharacters
-            | '\"' ->
-                let stringCharacters, remaining =
-                    remainingCharacters
-                    |> takeWhileNot '\"'
-                
-                let remainingTokens = tokenize remaining
-                let str = $"\"{String.Concat(stringCharacters)}\""
-                str::remainingTokens
-            | _ ->
-                let tokenCharacters, remaining = input |> takeWhileNot ' '
-                let remainingTokens = tokenize remaining
-                let token = String.Concat(tokenCharacters)
-                token::remainingTokens
 
     let run (input: string) interpreter =
         // TODO: Need more complex tokenization to handle strings with spaces
