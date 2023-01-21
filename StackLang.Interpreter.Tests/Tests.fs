@@ -30,8 +30,27 @@ let assertError (expectedMessage: string) (result: Result<'a, string>) =
 
 [<Fact>]
 let ``Can push primitive values onto the stack`` () =
-    interpret "5 8.3 \"string with spaces\" t"
-    |> assertStackMatches [ Boolean true; String "string with spaces"; Float 8.3; Integer 5 ]
+    interpret "5 8.3 \"string\" t"
+    |> assertStackMatches [ Boolean true; String "string"; Float 8.3; Integer 5 ]
+
+[<Fact>]
+let ``Can push strings with spaces onto the stack`` () =
+    interpret "\"string with spaces\""
+    |> assertStackMatches [ String "string with spaces" ]
+
+[<Fact>]
+let ``Can escape quotes in strings`` () =
+    // Input:    "some \"quotes\" in this"
+    // Expected: "some "quotes" in this"
+    interpret "\"some \\\"quotes\\\" in this\""
+    |> assertStackMatches [ String "some \"quotes\" in this" ]
+
+[<Fact>]
+let ``Can escape an escape character in a string`` () =
+    // Input:    "escape \\z this"
+    // Expected: "escape \z this"
+    interpret "\"escape \\\\z this\""
+    |> assertStackMatches [ String "escape \z this" ]
 
 [<Fact>]
 let ``Can push arrays onto the stack`` () =

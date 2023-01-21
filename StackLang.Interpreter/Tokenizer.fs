@@ -7,11 +7,20 @@ module Tokenizer =
     let rec takeWhileNot (terminalValue: char) (list: List<char>) =
         match list with
         | next::remaining ->
-            if next = terminalValue then
-                ([], remaining)
-            else
-                let values, unparsed = takeWhileNot terminalValue remaining
-                (next::values, unparsed)
+            match next with
+            | '\\' ->
+                match remaining with
+                | escapedCharacter::newRemaining ->
+                    let values, unparsed = takeWhileNot terminalValue newRemaining
+                    (escapedCharacter::values, unparsed)
+                | _ ->
+                    (remaining, [])
+            | _ ->
+                if next = terminalValue then
+                    ([], remaining)
+                else
+                    let values, unparsed = takeWhileNot terminalValue remaining
+                    (next::values, unparsed)
         | [] ->
             ([], [])
 
