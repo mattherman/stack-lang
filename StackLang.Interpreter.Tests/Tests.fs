@@ -219,6 +219,10 @@ let ``Can clear the stack`` () =
     interpret "1 2 3 4 5 clear" |> assertStackMatches []
 
 [<Fact>]
+let ``Can print values`` () =
+    interpret "5 print" |> assertStackMatches []
+
+[<Fact>]
 let ``Can define and execute custom words`` () =
     interpretMultiple [ ": square dup * ;"; "5 square" ]
     |> assertStackMatches [ Integer 25 ]
@@ -273,3 +277,10 @@ let ``Can negate values`` () =
 let ``Can perform conditional branching`` () =
     interpret "t [ 1 ] [ 2 ] if" |> assertStackMatches [ Integer 1 ]
     interpret "f [ 1 ] [ 2 ] if" |> assertStackMatches [ Integer 2 ]
+
+[<Fact>]
+let ``Can define recursive words`` () =
+    interpretMultiple [
+        ": count-down dup 0 = [ \"done!\" print . ] [ dup print 1 - count-down ] if ;"
+        "5 count-down"
+    ] |> assertStackMatches [] 

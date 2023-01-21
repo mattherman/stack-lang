@@ -93,6 +93,8 @@ let NativeSwap (_: Map<string, Word>) (stack: Value list) =
     
 let NativeClear (_: Map<string, Word>) (_: Value list) =
     Ok []
+
+let NativePrint = NativeDrop
     
 let NativeEval (dictionary: Map<string, Word>) (stack: Value list) =
     stack
@@ -198,6 +200,7 @@ let NativeWords = [
     { Symbol = "."; Instructions = Native NativeDrop }
     { Symbol = "swap"; Instructions = Native NativeSwap }
     { Symbol = "clear"; Instructions = Native NativeClear }
+    { Symbol = "print"; Instructions = Native NativePrint }
     { Symbol = "eval"; Instructions = Native NativeEval }
     { Symbol = "map"; Instructions = Native NativeMap }
     { Symbol = "filter"; Instructions = Native NativeFilter }

@@ -85,12 +85,14 @@ module Interpreter =
     and compileWord interpreter tokens : Result<Value option * Interpreter * string list, string> =
         let wordDefinition = List.tail tokens
         let symbol = List.head wordDefinition
-        compile (List.tail wordDefinition) ";" interpreter
+        let emptyWord = { Symbol = symbol; Instructions = Compiled [] }
+        let interpreterWithEmptyDefinition = { interpreter with Dictionary = interpreter.Dictionary.Add(symbol, emptyWord) }
+        compile (List.tail wordDefinition) ";" interpreterWithEmptyDefinition
         |> Result.map (fun (values, remainingTokens) ->
-            let word = { Symbol = symbol; Instructions = Compiled values }
-            let newDictionary = interpreter.Dictionary.Add(symbol, word)
-            let updatedInterpreter = { interpreter with Dictionary = newDictionary }
-            (None, updatedInterpreter, remainingTokens))
+            let compiledWord = { Symbol = symbol; Instructions = Compiled values }
+            let newDictionary = interpreter.Dictionary |> Map.remove symbol |> Map.add symbol compiledWord
+            let interpreterWithCompiledDefinition = { interpreter with Dictionary = newDictionary }
+            (None, interpreterWithCompiledDefinition, remainingTokens))
 
     and compileQuotation interpreter tokens =
         compile (List.tail tokens) "]" interpreter
