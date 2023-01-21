@@ -30,8 +30,8 @@ let assertError (expectedMessage: string) (result: Result<'a, string>) =
 
 [<Fact>]
 let ``Can push primitive values onto the stack`` () =
-    interpret "5 8.3 \"string\" t"
-    |> assertStackMatches [ Boolean true; String "string"; Float 8.3; Integer 5 ]
+    interpret "5 8.3 \"string with spaces\" t"
+    |> assertStackMatches [ Boolean true; String "string with spaces"; Float 8.3; Integer 5 ]
 
 [<Fact>]
 let ``Can push arrays onto the stack`` () =
