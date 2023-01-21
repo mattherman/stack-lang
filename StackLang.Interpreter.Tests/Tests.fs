@@ -39,14 +39,57 @@ let ``Can push arrays onto the stack`` () =
     |> assertStackMatches [ Array [| Integer 1; Integer 2; Integer 3 |] ]
 
 [<Fact>]
+let ``Can nest arrays`` () =
+    interpret "{ { 1 2 } { 3 } }"
+    |> assertStackMatches [
+        Array [|
+            Array [| Integer 1; Integer 2 |]
+            Array [| Integer 3 |]
+        |]
+    ]
+
+[<Fact>]
 let ``Can push quotations onto the stack`` () =
     interpret "[ 1 + ]"
     |> assertStackMatches [ Quotation [ Integer 1; Word "+" ] ]
 
-// [<Fact>]
-// let ``Can nest quotations`` () =
-//     interpret "[ 1 + [ 2 - ] ]"
-//     |> assertStackMatches [ Quotation [ "1"; "+"; "["; "2"; "-"; "]" ] ]
+[<Fact>]
+let ``Can nest quotations`` () =
+    interpret "[ 1 + [ 2 - ] ]"
+    |> assertStackMatches [
+        Quotation [
+            Integer 1
+            Word "+"
+            Quotation [
+                Integer 2
+                Word "-"
+            ]
+        ]
+    ]
+
+[<Fact>]
+let ``Can nest quotations and arrays arbitrarily deep`` () =
+    interpret "[ { { 1 } [ * dup ] } [ { 2 } { 3 } swap ] ]"
+    |> assertStackMatches [
+        Quotation [
+            Array [|
+                Array [| Integer 1 |]
+                Quotation [
+                    Word "*"
+                    Word "dup"
+                ]
+            |]
+            Quotation [
+                Array [| Integer 2 |]
+                Array [| Integer 3 |]
+                Word "swap"
+            ]
+        ]
+    ]
+
+[<Fact>]
+let ``Cannot nest word definitions`` () =
+    interpret ": outer : inner 1 + ; ;" |> assertError "Unable to parse literal: :"
 
 [<Fact>]
 let ``Addition requires two elements`` () =
