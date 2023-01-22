@@ -104,7 +104,7 @@ let NativeCall (engine: IExecutionEngine) (dictionary: Map<string, Word>) (stack
     |> operationWithOneParameter (fun (quotation, remainingStack) ->
         match quotation with
         | Quotation instructions ->
-            engine.ExecuteInstructions (Compiled instructions) dictionary remainingStack
+            engine.ExecuteInstructions ((Compiled instructions), dictionary, remainingStack)
         | _ -> Error "Value does not support eval")
 
 let NativeMap (engine: IExecutionEngine) (dictionary: Map<string, Word>) (stack: Value list) =
@@ -115,7 +115,7 @@ let NativeMap (engine: IExecutionEngine) (dictionary: Map<string, Word>) (stack:
             arr
             |> Array.toList
             |> List.map (fun value ->
-                engine.ExecuteInstructions (Compiled instructions) dictionary [ value ]
+                engine.ExecuteInstructions (Compiled instructions, dictionary, [ value ])
                 |> Result.map List.head)
             |> List.collectResults
             |> Result.map (List.toArray >> Array)
@@ -130,7 +130,7 @@ let NativeFilter (engine: IExecutionEngine) (dictionary: Map<string, Word>) (sta
             arr
             |> Array.toList
             |> List.map (fun value ->
-                engine.ExecuteInstructions (Compiled instructions) dictionary [ value ]
+                engine.ExecuteInstructions (Compiled instructions, dictionary, [ value ])
                 |> Result.map (fun resultStack ->
                     match List.head resultStack with
                     | Boolean b ->
@@ -172,7 +172,7 @@ let NativeIf (engine: IExecutionEngine) (dictionary: Map<string, Word>) (stack: 
             let quotation = if b then trueQuotation else falseQuotation
             match quotation with
             | Quotation q ->
-                engine.ExecuteInstructions (Compiled q) dictionary remainingStack
+                engine.ExecuteInstructions ((Compiled q), dictionary, remainingStack)
             | _ -> Error "Expected a quotation"
         | _ -> Error "Expected a boolean")
 
@@ -181,7 +181,7 @@ let NativeDip (engine: IExecutionEngine) (dictionary: Map<string, Word>) (stack:
     |> operationWithTwoParameters (fun (quotation, value, remainingStack) ->
         match quotation with
         | Quotation instructions ->
-            engine.ExecuteInstructions (Compiled instructions) dictionary remainingStack
+            engine.ExecuteInstructions ((Compiled instructions), dictionary, remainingStack)
             |> Result.map (fun resultStack ->
                 value :: resultStack)
         | _ -> Error "Expected a quotation")

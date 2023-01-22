@@ -108,7 +108,7 @@ module Interpreter =
             |> Result.bind (fun (parsedValue, interpreter, remainingTokens) ->
                 match parsedValue with
                 | Some value ->
-                    interpreter.Engine.Execute value interpreter.Dictionary interpreter.Stack
+                    interpreter.Engine.Execute (value, interpreter.Dictionary, interpreter.Stack)
                 | None ->
                     interpreter.Stack |> Ok
                 |> Result.bind (fun newStack ->
@@ -120,7 +120,7 @@ module Interpreter =
         next (interpreter, tokens)
 
     let createInterpreter () =
-        let executionEngine = Engine()
+        let executionEngine = DebugEngine()
         let nativeVocabulary =
             StandardLibrary.NativeWords executionEngine
             |> List.map (fun w -> (w.Symbol, w))
