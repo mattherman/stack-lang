@@ -107,46 +107,36 @@ let NativeEval (dictionary: Map<string, Word>) (stack: Value list) =
 let NativeMap (dictionary: Map<string, Word>) (stack: Value list) =
     stack
     |> operationWithTwoParameters (fun (quotation, array, remainingStack) ->
-        match quotation with
-        | Quotation instructions ->
-            match array with
-            | Array arr ->
-                arr
-                |> Array.toList
-                |> List.map (fun value ->
-                    executeInstructions (Compiled instructions) dictionary [ value ]
-                    |> Result.map List.head)
-                |> List.collectResults
-                |> Result.map (List.toArray >> Array)
-                |> Result.map (fun mappedArray -> mappedArray :: remainingStack)
-            | _ -> Error "Map expected an array"
-        | _ -> Error "Map expected a quotation")
+        match quotation, array with
+        | Quotation instructions, Array arr ->
+            arr
+            |> Array.toList
+            |> List.map (fun value ->
+                executeInstructions (Compiled instructions) dictionary [ value ]
+                |> Result.map List.head)
+            |> List.collectResults
+            |> Result.map (List.toArray >> Array)
+            |> Result.map (fun mappedArray -> mappedArray :: remainingStack)
+        | _ -> Error "Map expected a quotation and an array")
 
 let NativeFilter (dictionary: Map<string, Word>) (stack: Value list) =
     stack
     |> operationWithTwoParameters (fun (quotation, array, remainingStack) ->
-        match quotation with
-        | Quotation instructions ->
-            match array with
-            | Array arr ->
-                arr
-                |> Array.toList
-                |> List.map (fun value ->
-                    executeInstructions (Compiled instructions) dictionary [ value ]
-                    |> Result.map List.head
-                    |> Result.map (fun boolean -> (value, boolean)))
-                |> List.collectResults
-                |> Result.map (fun values ->
-                    values
-                    |> List.filter (fun (_, result) ->
-                        match result with
-                        | Boolean b -> b
-                        | _ -> false)
-                    |> List.map fst)
-                |> Result.map (List.toArray >> Array)
-                |> Result.map (fun mappedArray -> mappedArray :: remainingStack)
-            | _ -> Error "Filter expected an array"
-        | _ -> Error "Filter expected a quotation")
+        match quotation, array with
+        | Quotation instructions, Array arr ->
+            arr
+            |> Array.toList
+            |> List.map (fun value ->
+                executeInstructions (Compiled instructions) dictionary [ value ]
+                |> Result.map (fun resultStack ->
+                    match List.head resultStack with
+                    | Boolean b ->
+                        if b then Some value else None
+                    | _ -> None))
+            |> List.collectResults
+            |> Result.map (List.choose id >> List.toArray >> Array)
+            |> Result.map (fun mappedArray -> mappedArray :: remainingStack)
+        | _ -> Error "Filter expected a quotation and an array")
 
 let booleanOperation op =
     operationWithTwoParameters (fun (left, right, remainingStack) ->
