@@ -289,13 +289,43 @@ let ``Can duplicate the second stack value using over`` () =
     |> assertStackMatches [ Integer 10; Integer 20; Integer 10 ]
 
 [<Fact>]
-let ``Can apply a quotation and keep the input value`` () =
+let ``Can apply a quotation and keep the input value with keep`` () =
     interpret "20 [ 5 + ] keep"
     |> assertStackMatches [ Integer 20; Integer 25 ]
+
+[<Fact>]
+let ``Can apply two quotations to a stack value with bi`` () =
+    interpret "20 [ 5 + ] [ 2 * ] bi"
+    |> assertStackMatches [ Integer 40; Integer 25 ]
+
+[<Fact>]
+let ``Can apply two quotations to two stack values with bi*`` () =
+    interpret "10 20 [ 5 + ] [ 2 * ] bi*"
+    |> assertStackMatches [ Integer 40; Integer 15 ]
+
+[<Fact>]
+let ``Can apply a quotation to two stack values with bi<at>`` () =
+    interpret "10 20 [ 5 + ] bi@"
+    |> assertStackMatches [ Integer 25; Integer 15 ]
+
+[<Fact>]
+let ``Can apply three quotations to a stack value with tri`` () =
+    interpret "20 [ 5 + ] [ 2 * ] [ 2 / ] tri"
+    |> assertStackMatches [ Integer 10; Integer 40; Integer 25 ]
 
 [<Fact>]
 let ``Can define recursive words`` () =
     interpretMultiple [
         ": count-down dup 0 = [ \"done!\" print . ] [ dup print 1 - count-down ] if ;"
         "5 count-down"
-    ] |> assertStackMatches [] 
+    ] |> assertStackMatches []
+
+[<Fact>]
+let ``Can curry a parameter with a quotation`` () =
+    interpret "{ 1 2 3 } 2 [ - ] curry map"
+    |> assertStackMatches [ Array [| Integer -1; Integer 0; Integer 1 |] ]
+
+[<Fact>]
+let ``Can curry two parameters with a quotation`` () =
+    interpret "5 4 [ + ] 2curry"
+    |> assertStackMatches [ Quotation [ Integer 5; Integer 4; Word "+" ] ]

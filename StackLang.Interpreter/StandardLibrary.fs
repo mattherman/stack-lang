@@ -152,12 +152,6 @@ let NativeGreaterThan (_: Map<string, Word>) (stack: Value list) =
 let NativeLessThan (_: Map<string, Word>) (stack: Value list) =
     booleanOperation (<) stack
 
-let NativeGreaterThanOrEqual (_: Map<string, Word>) (stack: Value list) =
-    booleanOperation (>=) stack
-
-let NativeLessThanOrEqual (_: Map<string, Word>) (stack: Value list) =
-    booleanOperation (<=) stack
-
 let NativeNot (_: Map<string, Word>) (stack: Value list) =
     stack
     |> operationWithOneParameter (fun (boolean, remainingStack) ->
@@ -194,6 +188,15 @@ let NativeOver (_: Map<string, Word>) (stack: Value list) =
     |> operationWithTwoParameters (fun (first, second, remainingStack) ->
         second :: first :: second :: remainingStack |> Ok)
 
+let NativeCurry (_: Map<string, Word>) (stack: Value list) =
+    stack
+    |> operationWithTwoParameters (fun (quotation, value, remainingStack) ->
+        match quotation with
+        | Quotation instructions ->
+            let newQuotation = Quotation (value :: instructions)
+            newQuotation :: remainingStack |> Ok
+        | _ -> Error "Expected a quotation")
+
 let NativeWords = [
     { Symbol = "+"; Instructions = Native NativeAdd }
     { Symbol = "-"; Instructions = Native NativeSubtract }
@@ -212,16 +215,22 @@ let NativeWords = [
     { Symbol = "="; Instructions = Native NativeEquals }
     { Symbol = ">"; Instructions = Native NativeGreaterThan }
     { Symbol = "<"; Instructions = Native NativeLessThan }
-    { Symbol = ">="; Instructions = Native NativeGreaterThanOrEqual }
-    { Symbol = "<="; Instructions = Native NativeLessThanOrEqual }
     { Symbol = "not"; Instructions = Native NativeNot }
     { Symbol = "if"; Instructions = Native NativeIf }
     { Symbol = "dip"; Instructions = Native NativeDip }
     { Symbol = "over"; Instructions = Native NativeOver }
+    { Symbol = "curry"; Instructions = Native NativeCurry }
 ]
 
 let CompiledWords = @"
 
+: <= > not ;
+: >= < not ;
 : keep over [ call ] dip ;
+: bi [ keep ] dip call ;
+: bi* [ dip ] dip call ;
+: bi@ dup bi* ;
+: tri [ [ keep ] dip keep ] dip call ;
+: 2curry curry curry ;
 
 "
