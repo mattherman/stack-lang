@@ -1,4 +1,4 @@
-module StackLang.Interpreter.Native
+module StackLang.Interpreter.StandardLibrary
 
 open Models
 open ExecutionEngine
@@ -219,3 +219,9 @@ let NativeWords = [
     { Symbol = "dip"; Instructions = Native NativeDip }
     { Symbol = "over"; Instructions = Native NativeOver }
 ]
+
+let CompiledWords = @"
+
+: keep over [ call ] dip ;
+
+"

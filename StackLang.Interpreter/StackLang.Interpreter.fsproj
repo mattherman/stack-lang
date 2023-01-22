@@ -9,7 +9,7 @@
         <Compile Include="Models.fs" />
         <Compile Include="ExecutionEngine.fs" />
         <Compile Include="Tokenizer.fs" />
-        <Compile Include="Native.fs" />
+        <Compile Include="StandardLibrary.fs" />
         <Compile Include="Library.fs" />
     </ItemGroup>
 

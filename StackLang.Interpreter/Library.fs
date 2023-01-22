@@ -5,15 +5,10 @@ module Interpreter =
     open System
     open System.Text.RegularExpressions
     open Models
-    open Native
     open ExecutionEngine
     open Tokenizer
 
     let printValue = Models.printValue
-
-    let createInterpreter () =
-        let vocab = NativeWords |> List.map (fun w -> (w.Symbol, w)) |> Map.ofList
-        { Dictionary = vocab; Stack = [] }
 
     let push value interpreter =
         { interpreter with Stack = value :: interpreter.Stack }
@@ -121,6 +116,17 @@ module Interpreter =
                     next (updatedInterpreter, remainingTokens)))
 
     let run (input: string) interpreter =
-        // TODO: Need more complex tokenization to handle strings with spaces
         let tokens = tokenize (Seq.toList input)
         next (interpreter, tokens)
+
+    let createInterpreter () =
+        let nativeVocabulary =
+            StandardLibrary.NativeWords
+            |> List.map (fun w -> (w.Symbol, w))
+            |> Map.ofList
+        let interpreter = { Dictionary = nativeVocabulary; Stack = [] }
+        let compilationResult = run StandardLibrary.CompiledWords interpreter
+        match compilationResult with
+        | Ok interpreterWithFullStandardLibrary -> interpreterWithFullStandardLibrary
+        | Error msg -> failwith $"Unable to initialize interpreter, failed to compile the standard library: {msg}"
+

@@ -283,9 +283,15 @@ let ``Can apply a quotation to the second stack value using dip`` () =
     interpret "10 20 [ 5 + ] dip"
     |> assertStackMatches [ Integer 20; Integer 15 ]
 
+[<Fact>]
 let ``Can duplicate the second stack value using over`` () =
     interpret "10 20 over"
     |> assertStackMatches [ Integer 10; Integer 20; Integer 10 ]
+
+[<Fact>]
+let ``Can apply a quotation and keep the input value`` () =
+    interpret "20 [ 5 + ] keep"
+    |> assertStackMatches [ Integer 20; Integer 25 ]
 
 [<Fact>]
 let ``Can define recursive words`` () =
