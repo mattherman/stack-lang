@@ -45,4 +45,10 @@ module ExecutionEngine =
 
         override this.ExecuteInstructions (instructions, dictionary, stack) =
             printfn "In DebugEngine.ExecuteInstructions"
-            base.ExecuteInstructions (instructions, dictionary, stack)
+            let result = base.ExecuteInstructions (instructions, dictionary, stack)
+            match result with
+            | Error msg ->
+                printfn $"Encountered error: {msg}\nPress enter to continue..."
+                System.Console.ReadLine() |> ignore
+                result
+            | result -> result

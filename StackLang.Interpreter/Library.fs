@@ -1,5 +1,7 @@
 ﻿namespace StackLang.Interpreter
 
+open StackLang.Interpreter.Models
+
 module Interpreter =
 
     open System
@@ -119,8 +121,11 @@ module Interpreter =
         let tokens = tokenize (Seq.toList input)
         next (interpreter, tokens)
 
-    let createInterpreter () =
-        let executionEngine = DebugEngine()
+    let createInterpreter debug =
+        let executionEngine =
+            match debug with
+            | true -> DebugEngine() :> IExecutionEngine
+            | false -> Engine() :> IExecutionEngine
         let nativeVocabulary =
             StandardLibrary.NativeWords executionEngine
             |> List.map (fun w -> (w.Symbol, w))

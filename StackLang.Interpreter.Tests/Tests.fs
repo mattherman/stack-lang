@@ -6,7 +6,7 @@ open StackLang.Interpreter
 open StackLang.Interpreter.Models
 
 let interpretMultiple (input: string list) =
-    let interpreter = Interpreter.createInterpreter ()
+    let interpreter = Interpreter.createInterpreter false
 
     input
     |> List.fold

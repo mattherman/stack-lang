@@ -5,13 +5,13 @@ open StackLang.Interpreter
 let runFile file =
     let lines = File.ReadAllLines(file)
     let input = String.concat " " lines
-    Interpreter.createInterpreter ()
+    Interpreter.createInterpreter false
     |> Interpreter.run input
     |> ignore
 
 let runRepl () =
     let mutable quit = false
-    let mutable interpreter = Interpreter.createInterpreter ()
+    let mutable interpreter = Interpreter.createInterpreter true
     while not quit do
         printf "> "
         let input = Console.ReadLine()
