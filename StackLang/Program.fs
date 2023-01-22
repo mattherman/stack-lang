@@ -1,12 +1,13 @@
 ﻿open System
 open System.IO
 open StackLang.Interpreter
+open StackLang.Interpreter.Tokenizer
 
 let runFile file =
     let lines = File.ReadAllLines(file)
-    let input = String.concat " " lines
+    let tokens = lines |> String.concat " " |> tokenize
     Interpreter.createInterpreter false
-    |> Interpreter.run input
+    |> Interpreter.run tokens
     |> ignore
 
 let runRepl () =
@@ -18,9 +19,9 @@ let runRepl () =
         if input = "#quit" then
             quit <- true
         else
-            let result = Interpreter.run input interpreter
+            let result = Interpreter.run (tokenize input) interpreter
             match result with
-            | Ok nextState ->
+            | Ok (nextState, _) ->
                 interpreter <- nextState
             | Error msg ->
                 printfn $"Error: %s{msg}"

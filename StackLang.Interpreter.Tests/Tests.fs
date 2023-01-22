@@ -4,6 +4,7 @@ open Xunit
 open FsUnit.Xunit
 open StackLang.Interpreter
 open StackLang.Interpreter.Models
+open StackLang.Interpreter.Tokenizer
 
 let interpretMultiple (input: string list) =
     let interpreter = Interpreter.createInterpreter false
@@ -12,9 +13,10 @@ let interpretMultiple (input: string list) =
     |> List.fold
         (fun previousResult next ->
             match previousResult with
-            | Ok i -> Interpreter.run next i
+            | Ok (i, _) -> Interpreter.run (tokenize next) i
             | Error msg -> Error msg)
-        (Ok interpreter)
+        (Ok (interpreter, []))
+    |> Result.map fst
 
 let interpret (input: string) = interpretMultiple [ input ]
 

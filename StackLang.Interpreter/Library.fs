@@ -102,9 +102,9 @@ module Interpreter =
             let array = values |> List.toArray |> Array
             (array, remainingTokens) |> Ok)
         
-    let rec next (interpreter, tokens: string list) =
+    let rec next (interpreter, tokens: string list): Result<Interpreter * string list, string> =
         match tokens with
-        | [] -> Ok interpreter
+        | [] -> Ok (interpreter, [])
         | tokens ->
             parseNext tokens interpreter
             |> Result.bind (fun (parsedValue, interpreter, remainingTokens) ->
@@ -113,13 +113,18 @@ module Interpreter =
                     interpreter.Engine.Execute (value, interpreter.Dictionary, interpreter.Stack)
                 | None ->
                     interpreter.Stack |> Ok
-                |> Result.bind (fun newStack ->
+                |> Result.map (fun newStack ->
                     let updatedInterpreter = { interpreter with Stack = newStack }
-                    next (updatedInterpreter, remainingTokens)))
+                    (updatedInterpreter, remainingTokens)))
 
-    let run (input: string) interpreter =
-        let tokens = tokenize (Seq.toList input)
-        next (interpreter, tokens)
+    let run (tokens: string list) interpreter =
+        let rec execute (interpreter, remainingTokens: string list) =
+            match remainingTokens with
+            | [] -> Ok (interpreter, [])
+            | tokens ->
+                next (interpreter, tokens)
+                |> Result.bind execute
+        execute (interpreter, tokens)
 
     let createInterpreter debug =
         let executionEngine =
@@ -131,8 +136,8 @@ module Interpreter =
             |> List.map (fun w -> (w.Symbol, w))
             |> Map.ofList
         let interpreter = { Dictionary = nativeVocabulary; Stack = []; Engine = executionEngine }
-        let compilationResult = run StandardLibrary.CompiledWords interpreter
+        let compilationResult = run (tokenize StandardLibrary.CompiledWords) interpreter
         match compilationResult with
-        | Ok interpreterWithFullStandardLibrary -> interpreterWithFullStandardLibrary
+        | Ok (interpreterWithFullStandardLibrary, _) -> interpreterWithFullStandardLibrary
         | Error msg -> failwith $"Unable to initialize interpreter, failed to compile the standard library: {msg}"
 

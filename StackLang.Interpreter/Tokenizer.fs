@@ -30,25 +30,28 @@ module Tokenizer =
             |> takeWhileNot predicate
         (stringFunc characters, unparsed)
 
-    let rec tokenize (input: char list) : string list =
-        match input with
-        | [] -> []
-        | [lastCharacter] ->
-            if Char.IsWhiteSpace(lastCharacter) then
-                []
-            else
-                [ lastCharacter |> string ]
-        | nextCharacter::remainingCharacters ->
-            if Char.IsWhiteSpace(nextCharacter) then
-                tokenize remainingCharacters
-            else
-                let token, unparsedCharacters =
-                    match nextCharacter with
-                    | '\"' ->
-                        remainingCharacters
-                        |> parseUntil (fun c -> c = '\"') (fun characters -> $"\"{String.Concat(characters)}\"")
-                    | _ ->
-                        input
-                        |> parseUntil Char.IsWhiteSpace String.Concat
-                let remainingTokens = tokenize unparsedCharacters
-                token::remainingTokens
+    let tokenize (input: string) : string list =
+        let rec tokenize (input: char list) : string list =
+            match input with
+            | [] -> []
+            | [lastCharacter] ->
+                if Char.IsWhiteSpace(lastCharacter) then
+                    []
+                else
+                    [ lastCharacter |> string ]
+            | nextCharacter::remainingCharacters ->
+                if Char.IsWhiteSpace(nextCharacter) then
+                    tokenize remainingCharacters
+                else
+                    let token, unparsedCharacters =
+                        match nextCharacter with
+                        | '\"' ->
+                            remainingCharacters
+                            |> parseUntil (fun c -> c = '\"') (fun characters -> $"\"{String.Concat(characters)}\"")
+                        | _ ->
+                            input
+                            |> parseUntil Char.IsWhiteSpace String.Concat
+                    let remainingTokens = tokenize unparsedCharacters
+                    token::remainingTokens
+
+        tokenize (input |> Seq.toList)

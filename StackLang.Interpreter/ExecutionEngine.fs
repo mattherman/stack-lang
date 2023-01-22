@@ -39,16 +39,19 @@ module ExecutionEngine =
 
         inherit Engine()
 
+        let mutable state: (Map<string, Word> * Value list) list = []
+        member this.State = state
+
         override this.Execute (value: Value, dictionary: Map<string, Word>, stack: Value list) =
             printfn "In DebugEngine.Execute"
             base.Execute (value, dictionary, stack)
+            |> Result.map (fun newStack ->
+                state <- (dictionary, newStack) :: state
+                newStack)
 
         override this.ExecuteInstructions (instructions, dictionary, stack) =
             printfn "In DebugEngine.ExecuteInstructions"
-            let result = base.ExecuteInstructions (instructions, dictionary, stack)
-            match result with
-            | Error msg ->
-                printfn $"Encountered error: {msg}\nPress enter to continue..."
-                System.Console.ReadLine() |> ignore
-                result
-            | result -> result
+            base.ExecuteInstructions (instructions, dictionary, stack)
+            |> Result.map (fun newStack ->
+                state <- (dictionary, newStack) :: state
+                newStack)
