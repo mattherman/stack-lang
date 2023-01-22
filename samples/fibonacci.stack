@@ -1,0 +1,6 @@
+: fib
+    dup 2 < [
+        [ 1 - fib ] [ 2 - fib ] bi +
+    ] unless ;
+
+15 fib .

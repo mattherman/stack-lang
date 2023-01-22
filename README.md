@@ -1,21 +1,16 @@
 A stack-based, concatenative language inspired by Factor.
 
 ```
-> 2 4 +
+> cat ./samples/fibonacci.stack
 
---- Data stack:
-6
-> 3 -
+: fib
+    dup 2 < [
+        [ 1 - fib ] [ 2 - fib ] bi +
+    ] unless ;
 
---- Data stack:
-3
-> : square dup * ;
+15 fib .
 
---- Data stack:
-3
-> square .
-9
+> ./StackLang ./samples/fibonacci.stack
 
---- Data stack:
-> #quit
+610
 ```

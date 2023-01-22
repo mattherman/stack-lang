@@ -329,3 +329,8 @@ let ``Can curry a parameter with a quotation`` () =
 let ``Can curry two parameters with a quotation`` () =
     interpret "5 4 [ + ] 2curry"
     |> assertStackMatches [ Quotation [ Integer 5; Integer 4; Word "+" ] ]
+
+[<Fact>]
+let ``Can apply a quotation if a condition is false`` () =
+    interpret "\"value\" 1 0 > [ drop ] unless" |> assertStackMatches [ String "value" ]
+    interpret "\"value\" 1 0 < [ drop ] unless" |> assertStackMatches []

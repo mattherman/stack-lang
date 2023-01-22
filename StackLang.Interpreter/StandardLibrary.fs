@@ -83,6 +83,11 @@ let NativeDup (_: Map<string, Word>) (stack: Value list) =
 let NativeDrop (_: Map<string, Word>) (stack: Value list) =
     stack
     |> operationWithOneParameter (fun (token, remainingStack) ->
+        Ok remainingStack)
+
+let NativePrintAndDrop (_: Map<string, Word>) (stack: Value list) =
+    stack
+    |> operationWithOneParameter (fun (token, remainingStack) ->
         printValue token
         Ok remainingStack)
     
@@ -94,8 +99,6 @@ let NativeSwap (_: Map<string, Word>) (stack: Value list) =
 let NativeClear (_: Map<string, Word>) (_: Value list) =
     Ok []
 
-let NativePrint = NativeDrop
-    
 let NativeCall (dictionary: Map<string, Word>) (stack: Value list) =
     stack
     |> operationWithOneParameter (fun (quotation, remainingStack) ->
@@ -205,10 +208,10 @@ let NativeWords = [
     { Symbol = "%"; Instructions = Native NativeModulus }
     { Symbol = "dup"; Instructions = Native NativeDup }
     { Symbol = "drop"; Instructions = Native NativeDrop }
-    { Symbol = "."; Instructions = Native NativeDrop }
+    { Symbol = "."; Instructions = Native NativePrintAndDrop }
     { Symbol = "swap"; Instructions = Native NativeSwap }
     { Symbol = "clear"; Instructions = Native NativeClear }
-    { Symbol = "print"; Instructions = Native NativePrint }
+    { Symbol = "print"; Instructions = Native NativePrintAndDrop }
     { Symbol = "call"; Instructions = Native NativeCall }
     { Symbol = "map"; Instructions = Native NativeMap }
     { Symbol = "filter"; Instructions = Native NativeFilter }
@@ -232,5 +235,6 @@ let CompiledWords = @"
 : bi@ dup bi* ;
 : tri [ [ keep ] dip keep ] dip call ;
 : 2curry curry curry ;
+: unless swap [ drop ] [ call ] if ;
 
 "
