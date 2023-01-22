@@ -4,26 +4,6 @@ open StackLang.Interpreter.Models
 
 module ExecutionEngine =
 
-    let execute executeInstructionsFunc (value: Value, dictionary: Map<string, Word>, stack: Value list) =
-        match value with
-        | Word wordSymbol ->
-            match dictionary.TryGetValue(wordSymbol) with
-            | true, word -> executeInstructionsFunc (word.Instructions, dictionary, stack)
-            | _ -> Error $"No word named {wordSymbol} found in current vocabulary"
-        | _ -> value :: stack |> Ok
-        
-    let executeInstructions executeFunc instructions (dictionary: Map<string, Word>) (stack: Value list) =
-        match instructions with
-        | Native nativeWord ->
-            nativeWord dictionary stack
-        | Compiled compiledWord ->
-            compiledWord
-            |> List.fold (fun newStack nextToken ->
-                newStack
-                |> Result.bind (fun newStack ->
-                    executeFunc (nextToken, dictionary, newStack)))
-                (Ok stack)
-
     type Engine() =
 
         abstract member Execute: Value * Map<string, Word> * Value list -> Result<Value list, string>
@@ -36,10 +16,24 @@ module ExecutionEngine =
 
         interface IExecutionEngine with
             member this.Execute (value: Value, dictionary: Map<string, Word>, stack: Value list) =
-                execute this.ExecuteInstructions (value, dictionary, stack)
+                match value with
+                | Word wordSymbol ->
+                    match dictionary.TryGetValue(wordSymbol) with
+                    | true, word -> this.ExecuteInstructions (word.Instructions, dictionary, stack)
+                    | _ -> Error $"No word named {wordSymbol} found in current vocabulary"
+                | _ -> value :: stack |> Ok
 
             member this.ExecuteInstructions (instructions, dictionary, stack) =
-                executeInstructions this.Execute instructions dictionary stack
+                match instructions with
+                | Native nativeWord ->
+                    nativeWord dictionary stack
+                | Compiled compiledWord ->
+                    compiledWord
+                    |> List.fold (fun newStack nextToken ->
+                        newStack
+                        |> Result.bind (fun newStack ->
+                            this.Execute (nextToken, dictionary, newStack)))
+                        (Ok stack)
 
     type DebugEngine() =
 
