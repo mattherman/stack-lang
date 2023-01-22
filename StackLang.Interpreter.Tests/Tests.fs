@@ -228,8 +228,8 @@ let ``Can define and execute custom words`` () =
     |> assertStackMatches [ Integer 25 ]
 
 [<Fact>]
-let ``Can evaluate quotations`` () =
-    interpret "1 [ 2 + ] eval" |> assertStackMatches [ Integer 3 ]
+let ``Can call quotations`` () =
+    interpret "1 [ 2 + ] call" |> assertStackMatches [ Integer 3 ]
 
 [<Fact>]
 let ``Can map arrays`` () =
@@ -277,6 +277,15 @@ let ``Can negate values`` () =
 let ``Can perform conditional branching`` () =
     interpret "t [ 1 ] [ 2 ] if" |> assertStackMatches [ Integer 1 ]
     interpret "f [ 1 ] [ 2 ] if" |> assertStackMatches [ Integer 2 ]
+
+[<Fact>]
+let ``Can apply a quotation to the second stack value using dip`` () =
+    interpret "10 20 [ 5 + ] dip"
+    |> assertStackMatches [ Integer 20; Integer 15 ]
+
+let ``Can duplicate the second stack value using over`` () =
+    interpret "10 20 over"
+    |> assertStackMatches [ Integer 10; Integer 20; Integer 10 ]
 
 [<Fact>]
 let ``Can define recursive words`` () =

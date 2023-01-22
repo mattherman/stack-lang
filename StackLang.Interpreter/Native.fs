@@ -96,7 +96,7 @@ let NativeClear (_: Map<string, Word>) (_: Value list) =
 
 let NativePrint = NativeDrop
     
-let NativeEval (dictionary: Map<string, Word>) (stack: Value list) =
+let NativeCall (dictionary: Map<string, Word>) (stack: Value list) =
     stack
     |> operationWithOneParameter (fun (quotation, remainingStack) ->
         match quotation with
@@ -179,6 +179,21 @@ let NativeIf (dictionary: Map<string, Word>) (stack: Value list) =
             | _ -> Error "Expected a quotation"
         | _ -> Error "Expected a boolean")
 
+let NativeDip (dictionary: Map<string, Word>) (stack: Value list) =
+    stack
+    |> operationWithTwoParameters (fun (quotation, value, remainingStack) ->
+        match quotation with
+        | Quotation instructions ->
+            executeInstructions (Compiled instructions) dictionary remainingStack
+            |> Result.map (fun resultStack ->
+                value :: resultStack)
+        | _ -> Error "Expected a quotation")
+
+let NativeOver (_: Map<string, Word>) (stack: Value list) =
+    stack
+    |> operationWithTwoParameters (fun (first, second, remainingStack) ->
+        second :: first :: second :: remainingStack |> Ok)
+
 let NativeWords = [
     { Symbol = "+"; Instructions = Native NativeAdd }
     { Symbol = "-"; Instructions = Native NativeSubtract }
@@ -191,7 +206,7 @@ let NativeWords = [
     { Symbol = "swap"; Instructions = Native NativeSwap }
     { Symbol = "clear"; Instructions = Native NativeClear }
     { Symbol = "print"; Instructions = Native NativePrint }
-    { Symbol = "eval"; Instructions = Native NativeEval }
+    { Symbol = "call"; Instructions = Native NativeCall }
     { Symbol = "map"; Instructions = Native NativeMap }
     { Symbol = "filter"; Instructions = Native NativeFilter }
     { Symbol = "="; Instructions = Native NativeEquals }
@@ -201,4 +216,6 @@ let NativeWords = [
     { Symbol = "<="; Instructions = Native NativeLessThanOrEqual }
     { Symbol = "not"; Instructions = Native NativeNot }
     { Symbol = "if"; Instructions = Native NativeIf }
+    { Symbol = "dip"; Instructions = Native NativeDip }
+    { Symbol = "over"; Instructions = Native NativeOver }
 ]
