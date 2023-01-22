@@ -29,7 +29,7 @@ let operationWithThreeParameters (operation: Value * Value * Value * Value list 
     |> operationWithParameters 3 (fun (parameters, remainingStack) ->
         operation (parameters[0], parameters[1], parameters[2], remainingStack))
 
-let NativeAdd (_: Map<string, Word>) (stack: Value list) =
+let NativeAdd (engine: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
     stack
     |> operationWithTwoParameters (fun (left, right, remainingStack) ->
         match left, right with
@@ -39,7 +39,7 @@ let NativeAdd (_: Map<string, Word>) (stack: Value list) =
         | _ -> Error "Values do not support operator (+)"
         |> Result.map (fun value -> value::remainingStack))
 
-let NativeSubtract (_: Map<string, Word>) (stack: Value list) =
+let NativeSubtract (engine: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
     stack
     |> operationWithTwoParameters (fun (left, right, remainingStack) ->
         match left, right with
@@ -48,7 +48,7 @@ let NativeSubtract (_: Map<string, Word>) (stack: Value list) =
         | _ -> Error "Values do not support operator (-)"
         |> Result.map (fun value -> value::remainingStack))
 
-let NativeMultiply (_: Map<string, Word>) (stack: Value list) =
+let NativeMultiply (engine: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
     stack
     |> operationWithTwoParameters (fun (left, right, remainingStack) ->
         match left, right with
@@ -57,7 +57,7 @@ let NativeMultiply (_: Map<string, Word>) (stack: Value list) =
         | _ -> Error "Values do not support operator (*)"
         |> Result.map (fun value -> value::remainingStack))
 
-let NativeDivide (_: Map<string, Word>) (stack: Value list) =
+let NativeDivide (engine: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
     stack
     |> operationWithTwoParameters (fun (left, right, remainingStack) ->
         match left, right with
@@ -66,7 +66,7 @@ let NativeDivide (_: Map<string, Word>) (stack: Value list) =
         | _ -> Error "Values do not support operator (/)"
         |> Result.map (fun value -> value::remainingStack))
 
-let NativeModulus (_: Map<string, Word>) (stack: Value list) =
+let NativeModulus (engine: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
     stack
     |> operationWithTwoParameters (fun (left, right, remainingStack) ->
         match left, right with
@@ -75,39 +75,39 @@ let NativeModulus (_: Map<string, Word>) (stack: Value list) =
         | _ -> Error "Values do not support operator (%)"
         |> Result.map (fun value -> value::remainingStack))
 
-let NativeDup (_: Map<string, Word>) (stack: Value list) =
+let NativeDup (engine: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
     stack
     |> operationWithOneParameter (fun (token, remainingStack) ->
         Ok (token::token::remainingStack))
     
-let NativeDrop (_: Map<string, Word>) (stack: Value list) =
+let NativeDrop (engine: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
     stack
     |> operationWithOneParameter (fun (token, remainingStack) ->
         Ok remainingStack)
 
-let NativePrintAndDrop (_: Map<string, Word>) (stack: Value list) =
+let NativePrintAndDrop (engine: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
     stack
     |> operationWithOneParameter (fun (token, remainingStack) ->
         printValue token
         Ok remainingStack)
     
-let NativeSwap (_: Map<string, Word>) (stack: Value list) =
+let NativeSwap (engine: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
     stack
     |> operationWithTwoParameters (fun (first, second, remainingStack) ->
         Ok (second::first::remainingStack))
     
-let NativeClear (_: Map<string, Word>) (_: Value list) =
+let NativeClear (engine: IExecutionEngine) (_: Map<string, Word>) (_: Value list) =
     Ok []
 
-let NativeCall (dictionary: Map<string, Word>) (stack: Value list) =
+let NativeCall (engine: IExecutionEngine) (dictionary: Map<string, Word>) (stack: Value list) =
     stack
     |> operationWithOneParameter (fun (quotation, remainingStack) ->
         match quotation with
         | Quotation instructions ->
-            executeInstructions (Compiled instructions) dictionary remainingStack
+            engine.ExecuteInstructions (Compiled instructions) dictionary remainingStack
         | _ -> Error "Value does not support eval")
 
-let NativeMap (dictionary: Map<string, Word>) (stack: Value list) =
+let NativeMap (engine: IExecutionEngine) (dictionary: Map<string, Word>) (stack: Value list) =
     stack
     |> operationWithTwoParameters (fun (quotation, array, remainingStack) ->
         match quotation, array with
@@ -115,14 +115,14 @@ let NativeMap (dictionary: Map<string, Word>) (stack: Value list) =
             arr
             |> Array.toList
             |> List.map (fun value ->
-                executeInstructions (Compiled instructions) dictionary [ value ]
+                engine.ExecuteInstructions (Compiled instructions) dictionary [ value ]
                 |> Result.map List.head)
             |> List.collectResults
             |> Result.map (List.toArray >> Array)
             |> Result.map (fun mappedArray -> mappedArray :: remainingStack)
         | _ -> Error "Map expected a quotation and an array")
 
-let NativeFilter (dictionary: Map<string, Word>) (stack: Value list) =
+let NativeFilter (engine: IExecutionEngine) (dictionary: Map<string, Word>) (stack: Value list) =
     stack
     |> operationWithTwoParameters (fun (quotation, array, remainingStack) ->
         match quotation, array with
@@ -130,7 +130,7 @@ let NativeFilter (dictionary: Map<string, Word>) (stack: Value list) =
             arr
             |> Array.toList
             |> List.map (fun value ->
-                executeInstructions (Compiled instructions) dictionary [ value ]
+                engine.ExecuteInstructions (Compiled instructions) dictionary [ value ]
                 |> Result.map (fun resultStack ->
                     match List.head resultStack with
                     | Boolean b ->
@@ -146,16 +146,16 @@ let booleanOperation op =
         let result = (op right left) |> Boolean
         result :: remainingStack |> Ok)
 
-let NativeEquals (_: Map<string, Word>) (stack: Value list) =
+let NativeEquals (engine: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
     booleanOperation (=) stack
 
-let NativeGreaterThan (_: Map<string, Word>) (stack: Value list) =
+let NativeGreaterThan (engine: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
     booleanOperation (>) stack
 
-let NativeLessThan (_: Map<string, Word>) (stack: Value list) =
+let NativeLessThan (engine: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
     booleanOperation (<) stack
 
-let NativeNot (_: Map<string, Word>) (stack: Value list) =
+let NativeNot (engine: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
     stack
     |> operationWithOneParameter (fun (boolean, remainingStack) ->
         match boolean with
@@ -164,7 +164,7 @@ let NativeNot (_: Map<string, Word>) (stack: Value list) =
             result :: remainingStack |> Ok
         | _ -> Error "Not expected a boolean")
 
-let NativeIf (dictionary: Map<string, Word>) (stack: Value list) =
+let NativeIf (engine: IExecutionEngine) (dictionary: Map<string, Word>) (stack: Value list) =
     stack
     |> operationWithThreeParameters (fun (falseQuotation, trueQuotation, boolean, remainingStack) ->
         match boolean with
@@ -172,26 +172,26 @@ let NativeIf (dictionary: Map<string, Word>) (stack: Value list) =
             let quotation = if b then trueQuotation else falseQuotation
             match quotation with
             | Quotation q ->
-                executeInstructions (Compiled q) dictionary remainingStack
+                engine.ExecuteInstructions (Compiled q) dictionary remainingStack
             | _ -> Error "Expected a quotation"
         | _ -> Error "Expected a boolean")
 
-let NativeDip (dictionary: Map<string, Word>) (stack: Value list) =
+let NativeDip (engine: IExecutionEngine) (dictionary: Map<string, Word>) (stack: Value list) =
     stack
     |> operationWithTwoParameters (fun (quotation, value, remainingStack) ->
         match quotation with
         | Quotation instructions ->
-            executeInstructions (Compiled instructions) dictionary remainingStack
+            engine.ExecuteInstructions (Compiled instructions) dictionary remainingStack
             |> Result.map (fun resultStack ->
                 value :: resultStack)
         | _ -> Error "Expected a quotation")
 
-let NativeOver (_: Map<string, Word>) (stack: Value list) =
+let NativeOver (engine: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
     stack
     |> operationWithTwoParameters (fun (first, second, remainingStack) ->
         second :: first :: second :: remainingStack |> Ok)
 
-let NativeCurry (_: Map<string, Word>) (stack: Value list) =
+let NativeCurry (engine: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
     stack
     |> operationWithTwoParameters (fun (quotation, value, remainingStack) ->
         match quotation with
@@ -200,29 +200,29 @@ let NativeCurry (_: Map<string, Word>) (stack: Value list) =
             newQuotation :: remainingStack |> Ok
         | _ -> Error "Expected a quotation")
 
-let NativeWords = [
-    { Symbol = "+"; Instructions = Native NativeAdd }
-    { Symbol = "-"; Instructions = Native NativeSubtract }
-    { Symbol = "*"; Instructions = Native NativeMultiply }
-    { Symbol = "/"; Instructions = Native NativeDivide }
-    { Symbol = "%"; Instructions = Native NativeModulus }
-    { Symbol = "dup"; Instructions = Native NativeDup }
-    { Symbol = "drop"; Instructions = Native NativeDrop }
-    { Symbol = "."; Instructions = Native NativePrintAndDrop }
-    { Symbol = "swap"; Instructions = Native NativeSwap }
-    { Symbol = "clear"; Instructions = Native NativeClear }
-    { Symbol = "print"; Instructions = Native NativePrintAndDrop }
-    { Symbol = "call"; Instructions = Native NativeCall }
-    { Symbol = "map"; Instructions = Native NativeMap }
-    { Symbol = "filter"; Instructions = Native NativeFilter }
-    { Symbol = "="; Instructions = Native NativeEquals }
-    { Symbol = ">"; Instructions = Native NativeGreaterThan }
-    { Symbol = "<"; Instructions = Native NativeLessThan }
-    { Symbol = "not"; Instructions = Native NativeNot }
-    { Symbol = "if"; Instructions = Native NativeIf }
-    { Symbol = "dip"; Instructions = Native NativeDip }
-    { Symbol = "over"; Instructions = Native NativeOver }
-    { Symbol = "curry"; Instructions = Native NativeCurry }
+let NativeWords (engine: IExecutionEngine) = [
+    { Symbol = "+"; Instructions = Native (NativeAdd engine) }
+    { Symbol = "-"; Instructions = Native (NativeSubtract engine) }
+    { Symbol = "*"; Instructions = Native (NativeMultiply engine) }
+    { Symbol = "/"; Instructions = Native (NativeDivide engine) }
+    { Symbol = "%"; Instructions = Native (NativeModulus engine) }
+    { Symbol = "dup"; Instructions = Native (NativeDup engine) }
+    { Symbol = "drop"; Instructions = Native (NativeDrop engine) }
+    { Symbol = "."; Instructions = Native (NativePrintAndDrop engine) }
+    { Symbol = "swap"; Instructions = Native (NativeSwap engine) }
+    { Symbol = "clear"; Instructions = Native (NativeClear engine) }
+    { Symbol = "print"; Instructions = Native (NativePrintAndDrop engine) }
+    { Symbol = "call"; Instructions = Native (NativeCall engine) }
+    { Symbol = "map"; Instructions = Native (NativeMap engine) }
+    { Symbol = "filter"; Instructions = Native (NativeFilter engine) }
+    { Symbol = "="; Instructions = Native (NativeEquals engine) }
+    { Symbol = ">"; Instructions = Native (NativeGreaterThan engine) }
+    { Symbol = "<"; Instructions = Native (NativeLessThan engine) }
+    { Symbol = "not"; Instructions = Native (NativeNot engine) }
+    { Symbol = "if"; Instructions = Native (NativeIf engine) }
+    { Symbol = "dip"; Instructions = Native (NativeDip engine) }
+    { Symbol = "over"; Instructions = Native (NativeOver engine) }
+    { Symbol = "curry"; Instructions = Native (NativeCurry engine) }
 ]
 
 let CompiledWords = @"

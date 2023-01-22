@@ -1,8 +1,13 @@
 module StackLang.Interpreter.Models
 
-type Interpreter =
+type IExecutionEngine =
+    abstract Execute: value: Value -> dictionary: Map<string, Word> -> stack: Value list -> Result<Value list, string>
+    abstract ExecuteInstructions: instructions: Instructions -> dictionary: Map<string, Word> -> stack: Value list -> Result<Value list, string>
+
+and Interpreter =
     { Dictionary: Map<string, Word>
-      Stack: Value list }
+      Stack: Value list
+      Engine: IExecutionEngine }
 
 and Value =
     | Integer of int
