@@ -13,6 +13,18 @@ module Interpreter =
     let push value interpreter =
         { interpreter with Stack = value :: interpreter.Stack }
 
+    let define word interpreter =
+        let key = word.Symbol
+        let newDictionary =
+            if Map.containsKey key interpreter.Dictionary then
+                interpreter.Dictionary |> Map.remove key |> Map.add key word
+            else
+                interpreter.Dictionary |> Map.add key word
+        { interpreter with Dictionary = newDictionary }
+
+    let isWordDefined symbol interpreter =
+        Map.containsKey symbol interpreter.Dictionary
+
     let parseInteger (token: string) =
         match Int32.TryParse(token) with
         | true, number -> Integer number |> Ok
@@ -44,8 +56,8 @@ module Interpreter =
             parseInteger i
 
     let parseValue (token: string) interpreter =
-        match interpreter.Dictionary.ContainsKey(token) with
-        | true-> Word token |> Ok
+        match (isWordDefined token interpreter) with
+        | true -> Word token |> Ok
         | _ -> parseValueFromPrimitive token
 
     let rec parseNext (tokens: string list) interpreter : Result<Value option * Interpreter * string list, string> =
@@ -80,13 +92,13 @@ module Interpreter =
     and compileWord interpreter tokens : Result<Value option * Interpreter * string list, string> =
         let wordDefinition = List.tail tokens
         let symbol = List.head wordDefinition
+        let body = List.tail wordDefinition
         let emptyWord = { Symbol = symbol; Instructions = Compiled [] }
-        let interpreterWithEmptyDefinition = { interpreter with Dictionary = interpreter.Dictionary.Add(symbol, emptyWord) }
-        compile (List.tail wordDefinition) ";" interpreterWithEmptyDefinition
+        let interpreterWithEmptyDefinition = define emptyWord interpreter
+        compile body ";" interpreterWithEmptyDefinition
         |> Result.map (fun (values, remainingTokens) ->
             let compiledWord = { Symbol = symbol; Instructions = Compiled values }
-            let newDictionary = interpreter.Dictionary |> Map.remove symbol |> Map.add symbol compiledWord
-            let interpreterWithCompiledDefinition = { interpreter with Dictionary = newDictionary }
+            let interpreterWithCompiledDefinition = define compiledWord interpreter
             (None, interpreterWithCompiledDefinition, remainingTokens))
 
     and compileQuotation interpreter tokens =
