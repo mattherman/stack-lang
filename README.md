@@ -46,7 +46,7 @@ In addition to primitive values such as integers (`1`), floats (`2.5`), and stri
 
 ```
 : square dup * ;
-: even? % 2 = 0 ;
+: even? % 2 0 = ;
 
 { 1 2 3 4 5 } [ even? ] filter [ square ] map .
 
