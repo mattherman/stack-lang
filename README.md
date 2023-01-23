@@ -1,4 +1,4 @@
-A stack-based, concatenative language inspired by Factor.
+A stack-based, concatenative language inspired by [Factor](http://factorcode.org).
 
 ```
 > cat ./samples/fibonacci.stack
