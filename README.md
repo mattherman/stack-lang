@@ -40,6 +40,8 @@ It can then be executed:
 
 (Note: the `.` operation simply pops the top value from the stack and displays it)
 
+In addition to primitive values such as integers (`1`), floats (`2.5`), and strings (`"test"`), the language also supports arrays (`{ 1 2 3 }`) and quotations (`[ 2 * 3 + ]`) which are similar to lambdas.
+
 ## Examples
 
 ```
