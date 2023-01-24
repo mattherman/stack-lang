@@ -46,6 +46,11 @@ type DebugEngine() =
     let mutable state: (Map<string, Word> * Value list) list = []
     override this.State = state
 
+
+    // TODO: Can I just allow clients to subscribe to this with a callback method?
+    // Engine.Execute value, dict, stack
+    //   subscriberCallback dict stack
+    //     debugLoop -> StepNext | StepPrevious | Continue
     override this.Execute (value: Value, dictionary: Map<string, Word>, stack: Value list) =
         base.Execute (value, dictionary, stack)
         |> Result.map (fun newStack ->
