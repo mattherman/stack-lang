@@ -12,7 +12,13 @@ type Engine() =
     default this.ExecuteInstructions (instructions, dictionary, stack) =
         (this :> IExecutionEngine).ExecuteInstructions (instructions, dictionary, stack)
 
+    abstract member State: (Map<string, Word> * Value list) list
+    default this.State =
+        (this :> IExecutionEngine).State
+
     interface IExecutionEngine with
+        member this.State = []
+
         member this.Execute (value: Value, dictionary: Map<string, Word>, stack: Value list) =
             match value with
             | Word wordSymbol ->
@@ -38,17 +44,15 @@ type DebugEngine() =
     inherit Engine()
 
     let mutable state: (Map<string, Word> * Value list) list = []
-    member this.State = state
+    override this.State = state
 
     override this.Execute (value: Value, dictionary: Map<string, Word>, stack: Value list) =
-        printfn "In DebugEngine.Execute"
         base.Execute (value, dictionary, stack)
         |> Result.map (fun newStack ->
             state <- (dictionary, newStack) :: state
             newStack)
 
     override this.ExecuteInstructions (instructions, dictionary, stack) =
-        printfn "In DebugEngine.ExecuteInstructions"
         base.ExecuteInstructions (instructions, dictionary, stack)
         |> Result.map (fun newStack ->
             state <- (dictionary, newStack) :: state

@@ -3,6 +3,7 @@ module StackLang.Interpreter.Models
 type IExecutionEngine =
     abstract Execute: value: Value * dictionary: Map<string, Word> * stack: Value list -> Result<Value list, string>
     abstract ExecuteInstructions: instructions: Instructions * dictionary: Map<string, Word> * stack: Value list -> Result<Value list, string>
+    abstract State: (Map<string, Word> * Value list) list
 
 and Interpreter =
     { Dictionary: Map<string, Word>

@@ -126,9 +126,9 @@ module Interpreter =
                 |> Result.bind execute
         execute (interpreter, tokens)
 
-    let createInterpreter debug =
+    let createInterpreter withDebugger =
         let executionEngine =
-            match debug with
+            match withDebugger with
             | true -> DebugEngine() :> IExecutionEngine
             | false -> Engine() :> IExecutionEngine
         let nativeVocabulary =
