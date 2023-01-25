@@ -7,7 +7,7 @@ open StackLang.Interpreter.Models
 open StackLang.Interpreter.Tokenizer
 
 let interpretMultiple (input: string list) =
-    let interpreter = Interpreter.createInterpreter false
+    let interpreter = Interpreter.createInterpreter ()
 
     input
     |> List.fold

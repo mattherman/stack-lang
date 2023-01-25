@@ -2,32 +2,52 @@ module StackLang.Interpreter.ExecutionEngine
 
 open StackLang.Interpreter.Models
 
+type DebuggerState =
+    | Step of Debugger
+    | StepOnError of Debugger
+    | NotAttached
+
 type Engine() =
 
-    abstract member Execute: Value * Map<string, Word> * Value list -> Result<Value list, string>
-    default this.Execute (value: Value, dictionary: Map<string, Word>, stack: Value list) =
-        (this :> IExecutionEngine).Execute (value, dictionary, stack)
+    let mutable state: (Map<string, Word> * Value list) list = []
+    let mutable debuggerState = NotAttached
 
-    abstract member ExecuteInstructions: Instructions * Map<string, Word> * Value list -> Result<Value list, string>
-    default this.ExecuteInstructions (instructions, dictionary, stack) =
-        (this :> IExecutionEngine).ExecuteInstructions (instructions, dictionary, stack)
+    let nextDebuggerState debuggerCommand =
+        match debuggerState with
+        | Step debugger | StepOnError debugger ->
+            match debuggerCommand with
+            | StepNext | StepPrevious -> Step debugger
+            | Continue -> StepOnError debugger
+        | NotAttached -> NotAttached
 
-    abstract member State: (Map<string, Word> * Value list) list
-    default this.State =
-        (this :> IExecutionEngine).State
+    let rec execute (value: Value, dictionary: Map<string, Word>, stack: Value list) =
+        match debuggerState with
+        | Step debugger ->
+            debuggerState <- debugger.OnExecute (dictionary, stack) |> nextDebuggerState
+        | _ -> ()
 
-    interface IExecutionEngine with
-        member this.State = []
-
-        member this.Execute (value: Value, dictionary: Map<string, Word>, stack: Value list) =
+        let result =
             match value with
             | Word wordSymbol ->
                 match dictionary.TryGetValue(wordSymbol) with
-                | true, word -> this.ExecuteInstructions (word.Instructions, dictionary, stack)
+                | true, word -> executeInstructions (word.Instructions, dictionary, stack)
                 | _ -> Error $"No word named {wordSymbol} found in current vocabulary"
             | _ -> value :: stack |> Ok
 
-        member this.ExecuteInstructions (instructions, dictionary, stack) =
+        match result with
+        | Ok newStack ->
+            state <- (dictionary, newStack) :: state
+            result
+        | Error msg ->
+            match debuggerState with
+            | StepOnError debugger ->
+                debuggerState <- debugger.OnError (msg, dictionary, stack) |> nextDebuggerState
+                result // TODO: Handle step previous
+            | _ ->
+                result
+
+    and executeInstructions (instructions, dictionary, stack) =
+        let result =
             match instructions with
             | Native nativeWord ->
                 nativeWord dictionary stack
@@ -36,29 +56,31 @@ type Engine() =
                 |> List.fold (fun newStack nextToken ->
                     newStack
                     |> Result.bind (fun newStack ->
-                        this.Execute (nextToken, dictionary, newStack)))
+                        execute (nextToken, dictionary, newStack)))
                     (Ok stack)
 
-type DebugEngine() =
+        result
+        |> Result.iter (fun newStack ->
+            state <- (dictionary, newStack) :: state)
+        
+        result
 
-    inherit Engine()
+    interface IExecutionEngine with
+        member this.State = state
+        member this.AttachDebugger debuggerToAttach =
+            debuggerState <- StepOnError debuggerToAttach
+        member this.DetachDebugger () =
+            debuggerState <- NotAttached
+        member this.SetStep enabled =
+            match debuggerState, enabled with
+            | StepOnError debugger, true ->
+                debuggerState <- Step debugger
+            | Step debugger, false ->
+                debuggerState <- StepOnError debugger
+            | _ -> ()
 
-    let mutable state: (Map<string, Word> * Value list) list = []
-    override this.State = state
+        member this.Execute (value: Value, dictionary: Map<string, Word>, stack: Value list) =
+            execute (value, dictionary, stack)
 
-
-    // TODO: Can I just allow clients to subscribe to this with a callback method?
-    // Engine.Execute value, dict, stack
-    //   subscriberCallback dict stack
-    //     debugLoop -> StepNext | StepPrevious | Continue
-    override this.Execute (value: Value, dictionary: Map<string, Word>, stack: Value list) =
-        base.Execute (value, dictionary, stack)
-        |> Result.map (fun newStack ->
-            state <- (dictionary, newStack) :: state
-            newStack)
-
-    override this.ExecuteInstructions (instructions, dictionary, stack) =
-        base.ExecuteInstructions (instructions, dictionary, stack)
-        |> Result.map (fun newStack ->
-            state <- (dictionary, newStack) :: state
-            newStack)
+        member this.ExecuteInstructions (instructions, dictionary, stack) =
+            executeInstructions (instructions, dictionary, stack)

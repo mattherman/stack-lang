@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="Shared.fs" />
     <Compile Include="Debugger.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>

@@ -4,6 +4,19 @@ type IExecutionEngine =
     abstract Execute: value: Value * dictionary: Map<string, Word> * stack: Value list -> Result<Value list, string>
     abstract ExecuteInstructions: instructions: Instructions * dictionary: Map<string, Word> * stack: Value list -> Result<Value list, string>
     abstract State: (Map<string, Word> * Value list) list
+    abstract AttachDebugger: Debugger -> unit
+    abstract DetachDebugger: unit -> unit
+    abstract SetStep: bool -> unit
+
+and DebuggerCommand =
+    | StepNext
+    | StepPrevious
+    | Continue
+
+and Debugger = {
+    OnExecute: (Map<string, Word> * Value list) -> DebuggerCommand
+    OnError: (string * Map<string, Word> * Value list)-> DebuggerCommand
+}
 
 and Interpreter =
     { Dictionary: Map<string, Word>

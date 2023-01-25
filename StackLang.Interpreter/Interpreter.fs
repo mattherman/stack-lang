@@ -1,14 +1,12 @@
 ﻿namespace StackLang.Interpreter
 
-open StackLang.Interpreter.Models
-
 module Interpreter =
 
     open System
     open System.Text.RegularExpressions
-    open Models
     open ExecutionEngine
     open Tokenizer
+    open StackLang.Interpreter.Models
 
     let printValue = Models.printValue
 
@@ -126,11 +124,8 @@ module Interpreter =
                 |> Result.bind execute
         execute (interpreter, tokens)
 
-    let createInterpreter withDebugger =
-        let executionEngine =
-            match withDebugger with
-            | true -> DebugEngine() :> IExecutionEngine
-            | false -> Engine() :> IExecutionEngine
+    let createInterpreter () =
+        let executionEngine = Engine() :> IExecutionEngine
         let nativeVocabulary =
             StandardLibrary.NativeWords executionEngine
             |> List.map (fun w -> (w.Symbol, w))

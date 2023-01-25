@@ -1,51 +1,34 @@
 module StackLang.Debugger
 
-open StackLang.Interpreter
+open StackLang.Shared
 open StackLang.Interpreter.Models
 
-type ErrorState = {
-    Interpreter: Interpreter
-    StepPrevious: (unit -> Debugger) option
-    ErrorMessage: string
-}
+let onExecute (_: Map<string, Word>, stack: Value list) =
+    printfn "=== Debug ==="
+    printStack stack
+    printfn "1) Step Next"
+    printfn "2) Continue"
+    printfn "$ "
+    let input = System.Console.ReadLine()
+    match input with
+    | "1" -> DebuggerCommand.StepNext
+    | _ -> DebuggerCommand.Continue
 
-and OkState = {
-    Interpreter: Interpreter
-    StepNext: unit -> Debugger
-    StepPrevious: (unit -> Debugger) option
-}
+let onError (msg: string, _: Map<string, Word>, stack: Value list) =
+    printfn "=== Debug ==="
+    printfn $"Error: {msg}"
+    printStack stack
+    printfn "1) Abort"
+    printfn "$ "
+    let input = System.Console.ReadLine()
+    match input with
+    | _ -> DebuggerCommand.Continue
 
-and Debugger =
-    | Continue of OkState
-    | Break of ErrorState
-    | Finished of Interpreter
+let attach interpreter =
+    interpreter.Engine.AttachDebugger { OnExecute = onExecute; OnError = onError }
 
-let getPreviousInterpreterState (interpreter: Interpreter) =
-    if interpreter.Engine.State.Length > 0 then
-        let dictionary, stack = List.head interpreter.Engine.State
-        Some { interpreter with Dictionary = dictionary; Stack = stack }
-    else
-        None
+let detach interpreter =
+    interpreter.Engine.DetachDebugger ()
 
-let debug (tokens: string list) interpreter =
-    let rec execute (interpreter, remainingTokens: string list) : Debugger =
-        match remainingTokens with
-        | [] -> Finished interpreter
-        | tokens ->
-            let result = Interpreter.next (interpreter, tokens)
-            match result with
-            | Ok (interpreter, remainingTokens) ->
-                let stepNext = (fun () -> execute (interpreter, remainingTokens))
-                let stepPrevious =
-                    getPreviousInterpreterState interpreter
-                    |> Option.map (fun previousInterpreter ->
-                        fun () -> execute (previousInterpreter, remainingTokens)) // TODO: Need the old remaining tokens
-                Continue { StepNext = stepNext; StepPrevious = stepPrevious; Interpreter = interpreter }
-            | Error msg ->
-                let stepPrevious =
-                    getPreviousInterpreterState interpreter
-                    |> Option.map (fun previousInterpreter ->
-                        fun () -> execute (previousInterpreter, remainingTokens))// TODO: Need the old remaining tokens
-                Break { StepPrevious = stepPrevious; ErrorMessage = msg; Interpreter = interpreter }
-
-    execute (interpreter, tokens)
+let setStep interpreter value =
+    interpreter.Engine.SetStep value
