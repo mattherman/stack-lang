@@ -6,15 +6,17 @@ type IExecutionEngine =
     abstract State: (Map<string, Word> * Value list) list
     abstract AttachDebugger: Debugger -> unit
     abstract DetachDebugger: unit -> unit
+    abstract IsDebuggerAttached: unit -> bool
     abstract SetStep: bool -> unit
 
 and DebuggerCommand =
     | StepNext
+    | StepInto
     | StepPrevious
     | Continue
 
 and Debugger = {
-    OnExecute: (Map<string, Word> * Value list) -> DebuggerCommand
+    OnExecute: (Value * Map<string, Word> * Value list) -> DebuggerCommand
     OnError: (string * Map<string, Word> * Value list)-> DebuggerCommand
 }
 
