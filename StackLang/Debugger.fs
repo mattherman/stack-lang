@@ -35,9 +35,16 @@ let getErrorOptions () =
     options.addOption ("Step Previous", DebuggerCommand.StepPrevious)
     options
 
-let onExecute (valueToExecute: Value, _: Map<string, Word>, stack: Value list) =
+let printFrame value (frame: IFrame option) =
+    printf $"\n--> {valueToString value}"
+    match frame with
+    | Some frame ->
+        frame.Remaining() |> Seq.iter (fun value -> printf $" {valueToString value}")
+    | _ -> ()
+
+let onExecute (valueToExecute: Value, currentFrame: IFrame option, _: Map<string, Word>, stack: Value list) =
     printfn "=== Debug ==="
-    printfn $"\n--> {valueToString valueToExecute}\n"
+    printFrame valueToExecute currentFrame
     printStack stack
     let options = getOptions valueToExecute
     options.print ()

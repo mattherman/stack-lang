@@ -9,6 +9,10 @@ type IExecutionEngine =
     abstract IsDebuggerAttached: unit -> bool
     abstract SetStep: bool -> unit
 
+and IFrame =
+    abstract Advance: unit -> unit
+    abstract Remaining: unit -> Value seq
+
 and DebuggerCommand =
     | StepNext
     | StepInto
@@ -16,7 +20,7 @@ and DebuggerCommand =
     | Continue
 
 and Debugger = {
-    OnExecute: (Value * Map<string, Word> * Value list) -> DebuggerCommand
+    OnExecute: (Value * IFrame option * Map<string, Word> * Value list) -> DebuggerCommand
     OnError: (string * Map<string, Word> * Value list)-> DebuggerCommand
 }
 

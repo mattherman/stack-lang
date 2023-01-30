@@ -7,11 +7,28 @@ type DebuggerState =
     | StepOnError of Debugger
     | NotAttached
 
+type Frame(instructions: Value list) =
+    let instructions = instructions
+    let mutable index = 0
+
+    interface IFrame with
+        member this.Advance() =
+            if not (index = instructions.Length - 1) then
+                index <- index + 1
+            else
+                ()
+
+        member this.Remaining() = seq {
+            for i in index .. (instructions.Length - 1) do
+                yield instructions[i]
+        }
+
 type Engine() =
 
     let mutable state: (Map<string, Word> * Value list) list = []
     let mutable debuggerState = NotAttached
-    let mutable depth = 0
+    let mutable frames = []
+    let getDepth () = frames.Length
 
     let nextDebuggerState (debuggerCommand: DebuggerCommand) =
         match debuggerState with
@@ -22,25 +39,32 @@ type Engine() =
             | Continue -> StepOnError debugger
         | StepOnError debugger ->
             match debuggerCommand with
-            | StepNext | StepPrevious -> Step (debugger, depth)
+            | StepNext | StepPrevious -> Step (debugger, getDepth())
             | _ -> StepOnError debugger
         | NotAttached -> NotAttached
 
-    let addScope () =
-        depth <- depth + 1
+    let addFrame instructions =
+        let newFrame = Frame(instructions) :> IFrame
+        frames <- newFrame :: frames
+        newFrame
 
-    let removeScope () =
-        depth <- depth - 1
+    let removeFrame () =
+        frames <- List.tail frames
         match debuggerState with
-        | Step (debugger, debuggerDepth) when depth < debuggerDepth ->
-            debuggerState <- Step (debugger, depth)
+        | Step (debugger, debuggerDepth) when getDepth() < debuggerDepth ->
+            debuggerState <- Step (debugger, getDepth())
         | _ ->
             ()
 
+    let getCurrentFrame () =
+        match frames with
+        | [] -> None
+        | _ -> (List.head frames) |> Some
+
     let rec execute (value: Value, dictionary: Map<string, Word>, stack: Value list) =
         match debuggerState with
-        | Step (debugger, debuggerDepth) when debuggerDepth = depth ->
-            debuggerState <- debugger.OnExecute (value, dictionary, stack) |> nextDebuggerState
+        | Step (debugger, debuggerDepth) when debuggerDepth = getDepth() ->
+            debuggerState <- debugger.OnExecute (value, getCurrentFrame(), dictionary, stack) |> nextDebuggerState
         | _ -> ()
 
         let result =
@@ -48,10 +72,7 @@ type Engine() =
             | Word wordSymbol ->
                 match dictionary.TryGetValue(wordSymbol) with
                 | true, word ->
-                    addScope ()
-                    let result = executeInstructions (word.Instructions, dictionary, stack)
-                    removeScope ()
-                    result
+                    executeInstructions (word.Instructions, dictionary, stack)
                 | _ -> Error $"No word named {wordSymbol} found in current vocabulary"
             | _ -> value :: stack |> Ok
 
@@ -73,12 +94,17 @@ type Engine() =
             | Native nativeWord ->
                 nativeWord dictionary stack
             | Compiled compiledWord ->
-                compiledWord
-                |> List.fold (fun newStack nextToken ->
-                    newStack
-                    |> Result.bind (fun newStack ->
-                        execute (nextToken, dictionary, newStack)))
-                    (Ok stack)
+                let frame = addFrame compiledWord
+                let result =
+                    compiledWord
+                    |> List.fold (fun newStack nextToken ->
+                        frame.Advance()
+                        newStack
+                        |> Result.bind (fun newStack ->
+                            execute (nextToken, dictionary, newStack)))
+                        (Ok stack)
+                removeFrame ()
+                result
 
         result
         |> Result.iter (fun newStack ->
@@ -103,7 +129,7 @@ type Engine() =
         member this.SetStep enabled =
             match debuggerState, enabled with
             | StepOnError debugger, true ->
-                debuggerState <- Step (debugger, depth)
+                debuggerState <- Step (debugger, getDepth())
             | Step (debugger, _), false ->
                 debuggerState <- StepOnError debugger
             | _ -> ()
