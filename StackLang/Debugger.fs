@@ -18,7 +18,7 @@ let optionsPrinter () =
         optionNumber <- optionNumber + 1
     let printOptions = fun () ->
         options
-        |> Map.iter (fun i (text, _) -> printfn $"{i}) {text}")
+        |> Map.iter (fun i (text, _) -> printf $"\n{i}) {text}")
     let getResult = fun optionNumber ->
         options
         |> Map.tryFind optionNumber
@@ -57,20 +57,20 @@ let printWithHighlight values indexToHighlight =
         printf $" {valueToString value}"
         Console.ResetColor())
 
-let printFrame value (frame: IFrame option) =
-    match frame with
-    | Some frame ->
-        match frame.Source with
-        | Word symbol ->
-            printf $"\nWord:{symbol} -->"
-            printWithHighlight frame.Instructions frame.InstructionIndex
-        | _ ->
-            printf "\nQuotation --> ["
-            printWithHighlight frame.Instructions frame.InstructionIndex
-            printf " ]"
+let printFrame (frame: IFrame) =
+    match frame.Source with
+    | Word symbol ->
+        printf $"\nWord:{symbol} -->"
+        printWithHighlight frame.Instructions frame.InstructionIndex
     | _ ->
-        printf $"\nREPL --> {valueToString value}\n"
+        printf "\nQuotation --> ["
+        printWithHighlight frame.Instructions frame.InstructionIndex
+        printf " ]"
 
+let printFrameOrValue value (frame: IFrame option) =
+    match frame with
+    | Some frame -> printFrame frame
+    | _ -> printf $"\nREPL --> {valueToString value}\n"
     printf "\n"
 
 let printStackTrace (frames: IFrame list) =
@@ -81,8 +81,8 @@ let printStackTrace (frames: IFrame list) =
     frames
     |> List.rev
     |> List.iteri (fun i frame ->
-        let tabs = Seq.replicate i " " |> String.concat ""
-        printf $"{tabs}"
+        let indent = Seq.replicate i " " |> String.concat ""
+        printf $"{indent}"
         if i > 0 then printf "↳ " else ()
         match frame.Source with
         | Word symbol ->
@@ -90,30 +90,34 @@ let printStackTrace (frames: IFrame list) =
         | _ ->
             printf "["
             printWithHighlight frame.Instructions frame.InstructionIndex
-            printf " ]\n")
-    printf "\n"
+            printfn " ]")
 
 let onExecute (valueToExecute: Value, currentFrame: IFrame option, _: Map<string, Word>, stack: Value list) =
     printStack stack
     printfn "\n=== Debug ==="
-    printFrame valueToExecute currentFrame
+    printFrameOrValue valueToExecute currentFrame
     printf "\n"
     let options = getOptions valueToExecute
     options.print ()
-    printf "$> "
+    printf "\n$> "
     Console.ReadLine() |> getCommand options
 
 let onError (msg: string, frames: IFrame list, _: Map<string, Word>, stack: Value list) =
-    printfn $"\nError: {msg}"
     printStack stack
     printfn "\n=== Debug ==="
-    printfn "\nTraceback:"
-    printStackTrace frames
+    printfn $"\nError: {msg}"
+    if frames.Length > 0 then
+        printfn "\nTraceback:"
+        printStackTrace frames
+        printFrame frames[0]
+        printf "\n"
+    else
+        ()
+
     let options = getErrorOptions ()
-    // TODO: Allow printing current word definition
     // TODO: Allow editing the stack?
     options.print ()
-    printf "$> "
+    printf "\n$> "
     Console.ReadLine() |> getCommand options
 
 let attach interpreter =
