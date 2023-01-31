@@ -7,8 +7,7 @@ type DebuggerState =
     | StepOnError of Debugger
     | NotAttached
 
-type Frame(instructions: Value list) =
-    let instructions = instructions
+type Frame(instructions: Value list, source: Value) =
     let mutable index = 0
 
     interface IFrame with
@@ -18,12 +17,19 @@ type Frame(instructions: Value list) =
             else
                 ()
 
-        member this.Current() = instructions[index]
+        member this.InstructionIndex = index
 
-        member this.Remaining() = seq {
-            for i in (index + 1) .. (instructions.Length - 1) do
-                yield instructions[i]
-        }
+        member this.Instructions = instructions
+
+        member this.CurrentInstruction = instructions[index]
+
+        member this.RemainingInstructions() =
+            Seq.toList (seq {
+                for i in index .. (instructions.Length - 1) do
+                    yield instructions[i]
+            })
+
+        member this.Source = source
 
 type Engine() =
 
@@ -38,6 +44,7 @@ type Engine() =
             match debuggerCommand with
             | StepNext | StepPrevious -> Step (debugger, debuggerDepth)
             | StepInto -> Step (debugger, debuggerDepth + 1)
+            | StepOut -> Step (debugger, debuggerDepth - 1)
             | Continue -> StepOnError debugger
         | StepOnError debugger ->
             match debuggerCommand with
@@ -45,8 +52,8 @@ type Engine() =
             | _ -> StepOnError debugger
         | NotAttached -> NotAttached
 
-    let addFrame instructions =
-        let newFrame = Frame(instructions) :> IFrame
+    let addFrame source instructions =
+        let newFrame = Frame(instructions, source) :> IFrame
         frames <- newFrame :: frames
         newFrame
 
@@ -74,7 +81,7 @@ type Engine() =
             | Word wordSymbol ->
                 match dictionary.TryGetValue(wordSymbol) with
                 | true, word ->
-                    executeInstructions (word.Instructions, dictionary, stack)
+                    executeInstructions (value, word.Instructions, dictionary, stack)
                 | _ -> Error $"No word named {wordSymbol} found in current vocabulary"
             | _ -> value :: stack |> Ok
 
@@ -92,13 +99,13 @@ type Engine() =
 
         result
 
-    and executeInstructions (instructions, dictionary, stack) =
+    and executeInstructions (source, instructions, dictionary, stack) =
         let result =
             match instructions with
             | Native nativeWord ->
                 nativeWord dictionary stack
             | Compiled compiledWord ->
-                let frame = addFrame compiledWord
+                let frame = addFrame source compiledWord
                 let result =
                     compiledWord
                     |> List.fold (fun newStack nextToken ->
@@ -142,5 +149,5 @@ type Engine() =
         member this.Execute (value: Value, dictionary: Map<string, Word>, stack: Value list) =
             execute (value, dictionary, stack)
 
-        member this.ExecuteInstructions (instructions, dictionary, stack) =
-            executeInstructions (instructions, dictionary, stack)
+        member this.ExecuteInstructions (source, instructions, dictionary, stack) =
+            executeInstructions (source, instructions, dictionary, stack)

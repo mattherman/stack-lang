@@ -47,15 +47,29 @@ let getCommand (options: OptionsPrinter) (str: string) =
     |> Option.bind options.getResult
     |> Option.defaultValue DebuggerCommand.Continue
 
-let printFrame value (frame: IFrame option) =
-    printf $"\n--> {valueToString value}"
+let printWithHighlight values indexToHighlight =
+    values
+    |> Seq.iteri (fun i value ->
+        if not (i = indexToHighlight) then
+            Console.ForegroundColor <- ConsoleColor.DarkGray
+        else
+            ()
+        printf $" {valueToString value}"
+        Console.ResetColor())
 
-    Console.ForegroundColor <- ConsoleColor.DarkGray
+let printFrame value (frame: IFrame option) =
     match frame with
     | Some frame ->
-        frame.Remaining() |> Seq.iter (fun value -> printf $" {valueToString value}")
-    | _ -> ()
-    Console.ResetColor()
+        match frame.Source with
+        | Word symbol ->
+            printf $"\nWord:{symbol} -->"
+            printWithHighlight frame.Instructions frame.InstructionIndex
+        | _ ->
+            printf "\nQuotation --> ["
+            printWithHighlight frame.Instructions frame.InstructionIndex
+            printf " ]"
+    | _ ->
+        printf $"\nREPL --> {valueToString value}\n"
 
     printf "\n"
 
@@ -70,7 +84,13 @@ let printStackTrace (frames: IFrame list) =
         let tabs = Seq.replicate i " " |> String.concat ""
         printf $"{tabs}"
         if i > 0 then printf "↳ " else ()
-        frame.Current() |> printValue)
+        match frame.Source with
+        | Word symbol ->
+            printfn $"{symbol}"
+        | _ ->
+            printf "["
+            printWithHighlight frame.Instructions frame.InstructionIndex
+            printf " ]\n")
     printf "\n"
 
 let onExecute (valueToExecute: Value, currentFrame: IFrame option, _: Map<string, Word>, stack: Value list) =
@@ -87,8 +107,11 @@ let onError (msg: string, frames: IFrame list, _: Map<string, Word>, stack: Valu
     printfn $"\nError: {msg}"
     printStack stack
     printfn "\n=== Debug ===\n"
+    printfn "\nTraceback:"
     printStackTrace frames
     let options = getErrorOptions ()
+    // TODO: Allow printing current word definition
+    // TODO: Allow editing the stack?
     options.print ()
     printf "$> "
     Console.ReadLine() |> getCommand options
