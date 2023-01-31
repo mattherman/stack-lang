@@ -11,6 +11,7 @@ type IExecutionEngine =
 
 and IFrame =
     abstract Advance: unit -> unit
+    abstract Current: unit -> Value
     abstract Remaining: unit -> Value seq
 
 and DebuggerCommand =
@@ -21,7 +22,7 @@ and DebuggerCommand =
 
 and Debugger = {
     OnExecute: (Value * IFrame option * Map<string, Word> * Value list) -> DebuggerCommand
-    OnError: (string * Map<string, Word> * Value list)-> DebuggerCommand
+    OnError: (string * IFrame list * Map<string, Word> * Value list)-> DebuggerCommand
 }
 
 and Interpreter =

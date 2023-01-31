@@ -18,8 +18,10 @@ type Frame(instructions: Value list) =
             else
                 ()
 
+        member this.Current() = instructions[index]
+
         member this.Remaining() = seq {
-            for i in index .. (instructions.Length - 1) do
+            for i in (index + 1) .. (instructions.Length - 1) do
                 yield instructions[i]
         }
 
@@ -79,14 +81,16 @@ type Engine() =
         match result with
         | Ok newStack ->
             state <- (dictionary, newStack) :: state
-            result
         | Error msg ->
             match debuggerState with
+            | Step (debugger, _) ->
+                debuggerState <- debugger.OnError (msg, frames, dictionary, stack) |> nextDebuggerState
             | StepOnError debugger ->
-                debuggerState <- debugger.OnError (msg, dictionary, stack) |> nextDebuggerState
-                result // TODO: Handle step previous
+                debuggerState <- debugger.OnError (msg, frames, dictionary, stack) |> nextDebuggerState
             | _ ->
-                result
+                ()
+
+        result
 
     and executeInstructions (instructions, dictionary, stack) =
         let result =
@@ -98,10 +102,11 @@ type Engine() =
                 let result =
                     compiledWord
                     |> List.fold (fun newStack nextToken ->
-                        frame.Advance()
                         newStack
                         |> Result.bind (fun newStack ->
-                            execute (nextToken, dictionary, newStack)))
+                            let result = execute (nextToken, dictionary, newStack)
+                            frame.Advance()
+                            result))
                         (Ok stack)
                 removeFrame ()
                 result
