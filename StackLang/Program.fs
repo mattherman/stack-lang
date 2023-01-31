@@ -15,7 +15,7 @@ let runFile file =
 let runRepl () =
     let mutable quit = false
     let mutable interpreter = Interpreter.createInterpreter ()
-    attach interpreter
+    attachDebugger interpreter
 
     printfn "Interpreter started. Enter #help for more information."
     while not quit do
@@ -36,16 +36,16 @@ let runRepl () =
             quit <- true
             printfn "Goodbye!"
         | "#debug" ->
-            attach interpreter
+            attachDebugger interpreter
             printfn "Debugger attached."
         | "#nodebug" ->
-            detach interpreter
+            detachDebugger interpreter
             printfn "Debugger detached."
         | "#step" ->
-            setStep interpreter true
+            enableStepDebugging interpreter
             printfn "Step debugging enabled."
         | "#nostep" ->
-            setStep interpreter false
+            disableStepDebugging interpreter
             printfn "Step debugging disabled."
         | input when input.StartsWith("#") ->
             printfn "Invalid command."

@@ -120,13 +120,16 @@ let onError (msg: string, frames: IFrame list, _: Map<string, Word>, stack: Valu
     printf "\n$> "
     Console.ReadLine() |> getCommand options
 
-let attach interpreter =
+let attachDebugger interpreter =
     interpreter.Engine.AttachDebugger { OnExecute = onExecute; OnError = onError }
 
-let detach interpreter =
+let detachDebugger interpreter =
     interpreter.Engine.DetachDebugger ()
 
-let setStep interpreter value =
-    if value && not (interpreter.Engine.IsDebuggerAttached ()) then
-        attach interpreter
-    interpreter.Engine.SetStep value
+let enableStepDebugging interpreter =
+    if not (interpreter.Engine.IsDebuggerAttached ()) then
+        attachDebugger interpreter
+    interpreter.Engine.SetStep true
+
+let disableStepDebugging interpreter =
+    interpreter.Engine.SetStep false
