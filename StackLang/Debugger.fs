@@ -106,7 +106,7 @@ let onExecute (valueToExecute: Value, currentFrame: IFrame option, _: Map<string
 let onError (msg: string, frames: IFrame list, _: Map<string, Word>, stack: Value list) =
     printfn $"\nError: {msg}"
     printStack stack
-    printfn "\n=== Debug ===\n"
+    printfn "\n=== Debug ==="
     printfn "\nTraceback:"
     printStackTrace frames
     let options = getErrorOptions ()
