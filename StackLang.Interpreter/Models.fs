@@ -3,7 +3,6 @@ module StackLang.Interpreter.Models
 type IExecutionEngine =
     abstract Execute: value: Value * dictionary: Map<string, Word> * stack: Value list -> Result<Value list, string>
     abstract ExecuteInstructions: source: Value * instructions: Instructions * dictionary: Map<string, Word> * stack: Value list -> Result<Value list, string>
-    abstract State: (Map<string, Word> * Value list) list
     abstract AttachDebugger: Debugger -> unit
     abstract DetachDebugger: unit -> unit
     abstract IsDebuggerAttached: unit -> bool
@@ -21,12 +20,11 @@ and DebuggerCommand =
     | StepNext
     | StepInto
     | StepOut
-    | StepPrevious
     | Continue
 
 and Debugger = {
-    OnExecute: (Value * IFrame option * Map<string, Word> * Value list) -> DebuggerCommand
-    OnError: (string * IFrame list * Map<string, Word> * Value list)-> DebuggerCommand
+    OnExecute: Value * IFrame option * Value list -> DebuggerCommand
+    OnError: string * IFrame list * Value list -> DebuggerCommand
 }
 
 and Interpreter =

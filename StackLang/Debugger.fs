@@ -25,20 +25,21 @@ let optionsPrinter () =
         |> Option.map snd
     { addOption = addOption; print = printOptions; getResult = getResult }
 
-let getOptions (valueToExecute: Value) =
+let getOptions (valueToExecute: Value) (currentFrame: IFrame option) =
     let options = optionsPrinter ()
     options.addOption ("Step Next", DebuggerCommand.StepNext)
     match valueToExecute with
     | Word _ -> options.addOption ("Step Into", DebuggerCommand.StepInto)
     | _ -> ()
-    options.addOption ("Step Previous", DebuggerCommand.StepPrevious)
+    match currentFrame with
+    | Some _ -> options.addOption ("Step Out", DebuggerCommand.StepOut)
+    | _ -> ()
     options.addOption ("Continue", DebuggerCommand.Continue)
     options
 
 let getErrorOptions () =
     let options = optionsPrinter ()
     options.addOption ("Abort", DebuggerCommand.Continue)
-    options.addOption ("Step Previous", DebuggerCommand.StepPrevious)
     options
 
 let getCommand (options: OptionsPrinter) (str: string) =
@@ -92,17 +93,17 @@ let printStackTrace (frames: IFrame list) =
             printWithHighlight frame.Instructions frame.InstructionIndex
             printfn " ]")
 
-let onExecute (valueToExecute: Value, currentFrame: IFrame option, _: Map<string, Word>, stack: Value list) =
+let onExecute (valueToExecute, currentFrame, stack) =
     printStack stack
     printfn "\n=== Debug ==="
     printFrameOrValue valueToExecute currentFrame
     printf "\n"
-    let options = getOptions valueToExecute
+    let options = getOptions valueToExecute currentFrame
     options.print ()
     printf "\n$> "
     Console.ReadLine() |> getCommand options
 
-let onError (msg: string, frames: IFrame list, _: Map<string, Word>, stack: Value list) =
+let onError (msg, frames: IFrame list, stack) =
     printStack stack
     printfn "\n=== Debug ==="
     printfn $"\nError: {msg}"
@@ -115,7 +116,6 @@ let onError (msg: string, frames: IFrame list, _: Map<string, Word>, stack: Valu
         ()
 
     let options = getErrorOptions ()
-    // TODO: Allow editing the stack?
     options.print ()
     printf "\n$> "
     Console.ReadLine() |> getCommand options

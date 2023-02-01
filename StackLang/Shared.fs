@@ -18,3 +18,8 @@ let parseInt (str: string) =
     | true, value -> Some value
     | _ -> None
 
+module Option =
+    let ifNone func opt =
+        match opt with
+        | None -> func ()
+        | Some _ -> ()

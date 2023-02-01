@@ -33,7 +33,6 @@ type Frame(instructions: Value list, source: Value) =
 
 type Engine() =
 
-    let mutable state: (Map<string, Word> * Value list) list = []
     let mutable debuggerState = NotAttached
     let mutable lastError = None
     let mutable frames = []
@@ -43,13 +42,13 @@ type Engine() =
         match debuggerState with
         | Step (debugger, debuggerDepth) ->
             match debuggerCommand with
-            | StepNext | StepPrevious -> Step (debugger, debuggerDepth)
+            | StepNext -> Step (debugger, debuggerDepth)
             | StepInto -> Step (debugger, debuggerDepth + 1)
             | StepOut -> Step (debugger, debuggerDepth - 1)
             | Continue -> StepOnError debugger
         | StepOnError debugger ->
             match debuggerCommand with
-            | StepNext | StepPrevious -> Step (debugger, getDepth())
+            | StepNext -> Step (debugger, getDepth())
             | _ -> StepOnError debugger
         | NotAttached -> NotAttached
 
@@ -71,12 +70,12 @@ type Engine() =
         | [] -> None
         | _ -> (List.head frames) |> Some
 
-    let rec execute (value: Value, dictionary: Map<string, Word>, stack: Value list) =
+    let rec execute (value, dictionary: Map<string, Word>, stack) =
         lastError <- None
 
         match debuggerState with
         | Step (debugger, debuggerDepth) when debuggerDepth = getDepth() ->
-            debuggerState <- debugger.OnExecute (value, getCurrentFrame(), dictionary, stack) |> nextDebuggerState
+            debuggerState <- debugger.OnExecute (value, getCurrentFrame(), stack) |> nextDebuggerState
         | _ -> ()
 
         let result =
@@ -88,51 +87,37 @@ type Engine() =
                 | _ -> Error $"No word named {wordSymbol} found in current vocabulary"
             | _ -> value :: stack |> Ok
 
-        match result with
-        | Ok newStack ->
-            state <- (dictionary, newStack) :: state
-        | Error msg ->
-            match lastError with
-            | None ->
-                lastError <- Some msg
-                match debuggerState with
-                | Step (debugger, _) ->
-                    debuggerState <- debugger.OnError (msg, frames, dictionary, stack) |> nextDebuggerState
-                | StepOnError debugger ->
-                    debuggerState <- debugger.OnError (msg, frames, dictionary, stack) |> nextDebuggerState
-                | _ -> ()
-            | Some _ -> ()
-
-        result
+        match result, lastError with
+        | Error msg, None ->
+            lastError <- Some msg
+            match debuggerState with
+            | Step (debugger, _) ->
+                debuggerState <- debugger.OnError (msg, frames, stack) |> nextDebuggerState
+            | StepOnError debugger ->
+                debuggerState <- debugger.OnError (msg, frames, stack) |> nextDebuggerState
+            | _ -> ()
+            Error msg
+        | _ -> result
 
     and executeInstructions (source, instructions, dictionary, stack) =
-        let result =
-            match instructions with
-            | Native nativeWord ->
-                nativeWord dictionary stack
-            | Compiled compiledWord ->
-                let frame = addFrame source compiledWord
-                let result =
-                    compiledWord
-                    |> List.fold (fun newStack nextToken ->
-                        newStack
-                        |> Result.bind (fun newStack ->
-                            let result = execute (nextToken, dictionary, newStack)
-                            frame.Advance()
-                            result))
-                        (Ok stack)
-                removeFrame ()
-                result
-
-        result
-        |> Result.iter (fun newStack ->
-            state <- (dictionary, newStack) :: state)
-        
-        result
+        match instructions with
+        | Native nativeWord ->
+            nativeWord dictionary stack
+        | Compiled compiledWord ->
+            let frame = addFrame source compiledWord
+            let result =
+                compiledWord
+                |> List.fold (fun newStack nextToken ->
+                    newStack
+                    |> Result.bind (fun newStack ->
+                        let result = execute (nextToken, dictionary, newStack)
+                        frame.Advance()
+                        result))
+                    (Ok stack)
+            removeFrame ()
+            result
 
     interface IExecutionEngine with
-        member this.State = state
-
         member this.AttachDebugger debuggerToAttach =
             debuggerState <- StepOnError debuggerToAttach
 
