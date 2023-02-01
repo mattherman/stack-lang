@@ -336,3 +336,18 @@ let ``Can curry two parameters with a quotation`` () =
 let ``Can apply a quotation if a condition is false`` () =
     interpret "\"value\" 1 0 > [ drop ] unless" |> assertStackMatches [ String "value" ]
     interpret "\"value\" 1 0 < [ drop ] unless" |> assertStackMatches []
+
+[<Fact>]
+let ``Can time execution of a quotation`` () =
+    let result =
+        interpretMultiple [
+            ": count-down dup 0 = [ drop ] [ 1 - count-down ] if ;"
+            "[ 1000 count-down ] time"
+        ]
+    match result with
+    | Ok interpreter ->
+        match List.head interpreter.Stack with
+        | Integer elapsed ->
+            elapsed |> should greaterThan 0
+        | _ -> Assert.True(false, "Expected an integer value")
+    | Error msg -> Assert.True(false, msg)

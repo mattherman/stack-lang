@@ -3,4 +3,4 @@
         [ 1 - fib ] [ 2 - fib ] bi +
     ] unless ;
 
-15 fib .
+[ 30 fib . ] time print

@@ -199,6 +199,20 @@ let NativeCurry (_: IExecutionEngine) (_: Map<string, Word>) (stack: Value list)
             newQuotation :: remainingStack |> Ok
         | _ -> Error "Expected a quotation")
 
+let NativeTime (engine: IExecutionEngine) (dictionary: Map<string, Word>) (stack: Value list) =
+    stack
+    |> operationWithOneParameter (fun (quotation, remainingStack) ->
+        match quotation with
+        | Quotation instructions ->
+            let stopwatch = System.Diagnostics.Stopwatch.StartNew()
+            engine.ExecuteInstructions (quotation, Compiled instructions, dictionary, remainingStack)
+            |> Result.map (fun resultStack ->
+                stopwatch.Stop()
+                // Warning: Potentially truncates values
+                let elapsed = int32(stopwatch.ElapsedMilliseconds)
+                (Integer elapsed) :: resultStack)
+        | _ -> Error "Expected a quotation")
+
 let NativeWords (engine: IExecutionEngine) = [
     { Symbol = "+"; Instructions = Native (NativeAdd engine) }
     { Symbol = "-"; Instructions = Native (NativeSubtract engine) }
@@ -222,6 +236,7 @@ let NativeWords (engine: IExecutionEngine) = [
     { Symbol = "dip"; Instructions = Native (NativeDip engine) }
     { Symbol = "over"; Instructions = Native (NativeOver engine) }
     { Symbol = "curry"; Instructions = Native (NativeCurry engine) }
+    { Symbol = "time"; Instructions = Native (NativeTime engine) }
 ]
 
 let CompiledWords = @"
