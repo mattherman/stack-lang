@@ -1,7 +1,6 @@
 module StackLang.Interpreter.StandardLibrary
 
 open Models
-open ExecutionEngine
 
 let getParameters count (stack: Value list) =
     if stack.Length >= count then
@@ -29,7 +28,7 @@ let operationWithThreeParameters (operation: Value * Value * Value * Value list 
     |> operationWithParameters 3 (fun (parameters, remainingStack) ->
         operation (parameters[0], parameters[1], parameters[2], remainingStack))
 
-let NativeAdd (engine: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
+let NativeAdd (_: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
     stack
     |> operationWithTwoParameters (fun (left, right, remainingStack) ->
         match left, right with
@@ -39,7 +38,7 @@ let NativeAdd (engine: IExecutionEngine) (_: Map<string, Word>) (stack: Value li
         | _ -> Error "Values do not support operator (+)"
         |> Result.map (fun value -> value::remainingStack))
 
-let NativeSubtract (engine: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
+let NativeSubtract (_: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
     stack
     |> operationWithTwoParameters (fun (left, right, remainingStack) ->
         match left, right with
@@ -48,7 +47,7 @@ let NativeSubtract (engine: IExecutionEngine) (_: Map<string, Word>) (stack: Val
         | _ -> Error "Values do not support operator (-)"
         |> Result.map (fun value -> value::remainingStack))
 
-let NativeMultiply (engine: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
+let NativeMultiply (_: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
     stack
     |> operationWithTwoParameters (fun (left, right, remainingStack) ->
         match left, right with
@@ -57,7 +56,7 @@ let NativeMultiply (engine: IExecutionEngine) (_: Map<string, Word>) (stack: Val
         | _ -> Error "Values do not support operator (*)"
         |> Result.map (fun value -> value::remainingStack))
 
-let NativeDivide (engine: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
+let NativeDivide (_: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
     stack
     |> operationWithTwoParameters (fun (left, right, remainingStack) ->
         match left, right with
@@ -66,7 +65,7 @@ let NativeDivide (engine: IExecutionEngine) (_: Map<string, Word>) (stack: Value
         | _ -> Error "Values do not support operator (/)"
         |> Result.map (fun value -> value::remainingStack))
 
-let NativeModulus (engine: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
+let NativeModulus (_: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
     stack
     |> operationWithTwoParameters (fun (left, right, remainingStack) ->
         match left, right with
@@ -75,28 +74,28 @@ let NativeModulus (engine: IExecutionEngine) (_: Map<string, Word>) (stack: Valu
         | _ -> Error "Values do not support operator (%)"
         |> Result.map (fun value -> value::remainingStack))
 
-let NativeDup (engine: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
+let NativeDup (_: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
     stack
     |> operationWithOneParameter (fun (token, remainingStack) ->
         Ok (token::token::remainingStack))
     
-let NativeDrop (engine: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
+let NativeDrop (_: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
     stack
-    |> operationWithOneParameter (fun (token, remainingStack) ->
+    |> operationWithOneParameter (fun (_, remainingStack) ->
         Ok remainingStack)
 
-let NativePrintAndDrop (engine: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
+let NativePrintAndDrop (_: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
     stack
     |> operationWithOneParameter (fun (token, remainingStack) ->
         printValue token
         Ok remainingStack)
     
-let NativeSwap (engine: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
+let NativeSwap (_: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
     stack
     |> operationWithTwoParameters (fun (first, second, remainingStack) ->
         Ok (second::first::remainingStack))
     
-let NativeClear (engine: IExecutionEngine) (_: Map<string, Word>) (_: Value list) =
+let NativeClear (_: IExecutionEngine) (_: Map<string, Word>) (_: Value list) =
     Ok []
 
 let NativeCall (engine: IExecutionEngine) (dictionary: Map<string, Word>) (stack: Value list) =
@@ -146,16 +145,16 @@ let booleanOperation op =
         let result = (op right left) |> Boolean
         result :: remainingStack |> Ok)
 
-let NativeEquals (engine: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
+let NativeEquals (_: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
     booleanOperation (=) stack
 
-let NativeGreaterThan (engine: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
+let NativeGreaterThan (_: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
     booleanOperation (>) stack
 
-let NativeLessThan (engine: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
+let NativeLessThan (_: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
     booleanOperation (<) stack
 
-let NativeNot (engine: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
+let NativeNot (_: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
     stack
     |> operationWithOneParameter (fun (boolean, remainingStack) ->
         match boolean with
@@ -186,12 +185,12 @@ let NativeDip (engine: IExecutionEngine) (dictionary: Map<string, Word>) (stack:
                 value :: resultStack)
         | _ -> Error "Expected a quotation")
 
-let NativeOver (engine: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
+let NativeOver (_: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
     stack
     |> operationWithTwoParameters (fun (first, second, remainingStack) ->
         second :: first :: second :: remainingStack |> Ok)
 
-let NativeCurry (engine: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
+let NativeCurry (_: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
     stack
     |> operationWithTwoParameters (fun (quotation, value, remainingStack) ->
         match quotation with
