@@ -216,3 +216,7 @@ Word:add1AndPrint --> add1 print
 $> 4
 6
 ```
+
+![Encountering an error while debugging](./debug_error.png)
+
+![Using the debugger to step through execution of words and quotations](./debug_step.png)
