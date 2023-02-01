@@ -72,7 +72,7 @@ The REPL includes a debugger. It is attached by default and set to begin debuggi
 
 When an error occurs execution will be paused and diagnostic information printed to the console. This includes the error message, the current stack, a stack trace, and the execution context that triggered the error.
 
-![Encountering a stack underflow error while debugging](./debug_error.png)
+![Encountering a stack underflow error while debugging](./debug_error_cropped.png)
 
 Note: `trigger-error` in `[ 1 trigger-error 2]` and `call` in `clear call` are highlighted in the console when actually running the debugger in order to indicate what token was being executed in the trace.
 
