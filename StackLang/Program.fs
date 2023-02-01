@@ -5,6 +5,17 @@ open StackLang.Debugger
 open StackLang.Interpreter
 open StackLang.Interpreter.Tokenizer
 
+let printHelp () =
+    printfn "Enter input to execute or a command."
+    printfn "\nThe following commands are available:"
+    printfn "#quit - exits the interpreter"
+    printfn "#debug - attaches a debugger (attached by default)"
+    printfn "#nodebug - detaches the debuggger"
+    printfn "#step - attaches a debugger and enables step debugging"
+    printfn "#nostep - disables step debugging"
+    printfn "#help - displays this help information"
+    printfn "\nhttps://github.com/mattherman/stack-lang"
+
 let runFile file =
     let lines = File.ReadAllLines(file)
     let tokens = lines |> String.concat " " |> tokenize
@@ -23,15 +34,7 @@ let runRepl () =
         let input = Console.ReadLine()
         match input with
         | "#help" ->
-            printfn "Enter input to execute or a command."
-            printfn "\nThe following commands are available:"
-            printfn "#quit - exits the interpreter"
-            printfn "#debug - attaches a debugger (attached by default)"
-            printfn "#nodebug - detaches the debuggger"
-            printfn "#step - attaches a debugger and enables step debugging"
-            printfn "#nostep - disables step debugging"
-            printfn "#help - displays this help information"
-            printfn "\nhttps://github.com/mattherman/stack-lang"
+            printHelp ()
         | "#quit" ->
             quit <- true
             printfn "Goodbye!"
@@ -60,5 +63,6 @@ let runRepl () =
 
 let args = Environment.GetCommandLineArgs()
 match args with
+| [| _; "--help" |] | [| _; "-h" |] -> printHelp ()
 | [| _; file |] -> runFile file
 | _ -> runRepl ()
