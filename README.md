@@ -40,7 +40,7 @@ It can then be executed:
 
 (Note: the `.` operation simply pops the top value from the stack and displays it)
 
-In addition to primitive values such as integers (`1`), floats (`2.5`), and strings (`"test"`), the language also supports arrays (`{ 1 2 3 }`) and quotations (`[ 2 * 3 + ]`) which are similar to lambdas.
+In addition to primitive values such as integers (`1`), floats (`2.5`), booleans (`t`), and strings (`"test"`), the language also supports arrays (`{ 1 2 3 }`) and quotations (`[ 2 * 3 + ]`) which are similar to lambdas.
 
 ## Examples
 
@@ -73,8 +73,6 @@ The REPL includes a debugger. It is attached by default and set to begin debuggi
 When an error occurs execution will be paused and diagnostic information printed to the console. This includes the error message, the current stack, a stack trace, and the execution context that triggered the error.
 
 ![Encountering a stack underflow error while debugging](./debug_error_cropped.png)
-
-Note: `trigger-error` in `[ 1 trigger-error 2]` and `call` in `clear call` are highlighted in the console when actually running the debugger in order to indicate what token was being executed in the trace.
 
 Currently, the only option is to abort execution. The interpreter will be returned to the state before the last input to the REPL.
 
