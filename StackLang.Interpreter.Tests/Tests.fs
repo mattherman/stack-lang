@@ -30,6 +30,14 @@ let assertError (expectedMessage: string) (result: Result<'a, string>) =
     | Ok result -> Assert.True(false, $"Expected error but got {result}")
     | Error msg -> msg |> should equal expectedMessage
 
+let assertTopStackValue (assertionFunc: Value -> unit) (result: Result<Interpreter, string>) =
+    match result with
+    | Ok result ->
+        result.Stack
+        |> List.head
+        |> assertionFunc
+    | Error msg -> Assert.True(false, msg)
+
 [<Fact>]
 let ``Can push primitive values onto the stack`` () =
     interpret "5 8.3 \"string\" t"
@@ -339,15 +347,11 @@ let ``Can apply a quotation if a condition is false`` () =
 
 [<Fact>]
 let ``Can time execution of a quotation`` () =
-    let result =
-        interpretMultiple [
-            ": count-down dup 0 = [ drop ] [ 1 - count-down ] if ;"
-            "[ 1000 count-down ] time"
-        ]
-    match result with
-    | Ok interpreter ->
-        match List.head interpreter.Stack with
+    interpretMultiple [
+        ": count-down dup 0 = [ drop ] [ 1 - count-down ] if ;"
+        "[ 1000 count-down ] time"
+    ] |> assertTopStackValue (fun value ->
+        match value with
         | Integer elapsed ->
             elapsed |> should greaterThan 0
-        | _ -> Assert.True(false, "Expected an integer value")
-    | Error msg -> Assert.True(false, msg)
+        | _ -> Assert.True(false, "Expected an integer value"))
