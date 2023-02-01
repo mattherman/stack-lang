@@ -121,31 +121,23 @@ let ``Cannot nest word definitions`` () =
     interpret ": outer : inner 1 + ; ;" |> assertError "Unable to parse literal: :"
 
 [<Fact>]
-let ``Addition requires two elements`` () =
-    interpret "1 +" |> assertError "Stack underflow"
-
-[<Fact>]
-let ``Can add integers`` () =
+let ``Can add integers with '+'`` () =
     interpret "6 2 +" |> assertStackMatches [ Integer 8 ]
 
 [<Fact>]
-let ``Can add floats`` () =
+let ``Can add floats with '+'`` () =
     interpret "6.5 3.1 +" |> assertStackMatches [ Float 9.6 ]
 
 [<Fact>]
-let ``Can add strings`` () =
+let ``Can add strings with '+'`` () =
     interpret "\"a\" \"r\" \"ray\" + +" |> assertStackMatches [ String "array" ]
 
 [<Fact>]
-let ``Subtraction requires two elements`` () =
-    interpret "1 -" |> assertError "Stack underflow"
-
-[<Fact>]
-let ``Can subtract integers`` () =
+let ``Can subtract integers with '-'`` () =
     interpret "4 3 -" |> assertStackMatches [ Integer 1 ]
 
 [<Fact>]
-let ``Can subtract floats`` () =
+let ``Can subtract floats with '-'`` () =
     let result = interpret "5.2 3.8 -"
 
     match result with
@@ -155,39 +147,27 @@ let ``Can subtract floats`` () =
     | Error msg -> Assert.True(false, msg)
 
 [<Fact>]
-let ``Multiplication requires two elements`` () =
-    interpret "1 *" |> assertError "Stack underflow"
-
-[<Fact>]
-let ``Can multiply integers`` () =
+let ``Can multiply integers with '*'`` () =
     interpret "3 2 *" |> assertStackMatches [ Integer 6 ]
 
 [<Fact>]
-let ``Can multiply floats`` () =
+let ``Can multiply floats with '*'`` () =
     interpret "3.3 4.2 *" |> assertStackMatches [ Float 13.86 ]
 
 [<Fact>]
-let ``Division requires two elements`` () =
-    interpret "1 /" |> assertError "Stack underflow"
-
-[<Fact>]
-let ``Can divide integers`` () =
+let ``Can divide integers with '/'`` () =
     interpret "8 4 /" |> assertStackMatches [ Integer 2 ]
 
 [<Fact>]
-let ``Can divide floats`` () =
+let ``Can divide floats with '/'`` () =
     interpret "12.5 2.5 /" |> assertStackMatches [ Float 5.0 ]
 
 [<Fact>]
-let ``Modulus requires two elements`` () =
-    interpret "1 %" |> assertError "Stack underflow"
-
-[<Fact>]
-let ``Can calculate modulus of integers`` () =
+let ``Can calculate modulus of integers with 'mod'`` () =
     interpret "8 3 %" |> assertStackMatches [ Integer 2 ]
 
 [<Fact>]
-let ``Can calculate modulus of floats`` () =
+let ``Can calculate modulus of floats with 'mod'`` () =
     let result = interpret "3.5 2.2 %"
 
     match result with
@@ -197,35 +177,63 @@ let ``Can calculate modulus of floats`` () =
     | Error msg -> Assert.True(false, msg)
 
 [<Fact>]
-let ``Cannot duplicate an empty stack`` () =
-    interpret "dup" |> assertError "Stack underflow"
+let ``Can duplicate stack elements with 'dup'`` () =
+    interpret "3 dup"
+    |> assertStackMatches [
+        Integer 3
+        Integer 3
+    ]
 
 [<Fact>]
-let ``Can duplicate stack elements`` () =
-    interpret "3 dup" |> assertStackMatches [ Integer 3; Integer 3 ]
+let ``Can duplicate two stack elements with '2dup'`` () =
+    interpret "1 2 2dup"
+    |> assertStackMatches [
+        Integer 2; Integer 1
+        Integer 2; Integer 1
+    ]
 
 [<Fact>]
-let ``Swap requires two elements`` () =
-    interpret "1 swap" |> assertError "Stack underflow"
+let ``Can duplicate three stack elements '3dup'`` () =
+    interpret "1 2 3 3dup"
+    |> assertStackMatches [
+        Integer 3; Integer 2; Integer 1
+        Integer 3; Integer 2; Integer 1
+    ]
 
 [<Fact>]
-let ``Can swap stack elements`` () =
+let ``Can duplicate four stack elements with '4dup'`` () =
+    interpret "1 2 3 4 4dup"
+    |> assertStackMatches [
+        Integer 4; Integer 3; Integer 2; Integer 1
+        Integer 4; Integer 3; Integer 2; Integer 1
+    ]
+
+[<Fact>]
+let ``Can swap stack elements with 'swap'`` () =
     interpret "3 2 swap" |> assertStackMatches [ Integer 3; Integer 2 ]
-
-[<Fact>]
-let ``Cannot drop an empty stack`` () =
-    interpret "drop" |> assertError "Stack underflow"
 
 [<Fact>]
 let ``Can drop stack elements with 'drop'`` () =
     interpret "3 2 drop" |> assertStackMatches [ Integer 3 ]
 
 [<Fact>]
+let ``Can drop 2 stack elements with '2drop'`` () =
+    interpret "4 3 2 2drop" |> assertStackMatches [ Integer 4 ]
+
+[<Fact>]
+let ``Can drop 3 stack elements with '3drop'`` () =
+    interpret "5 4 3 2 3drop" |> assertStackMatches [ Integer 5 ]
+
+[<Fact>]
+let ``Can drop stack 4 elements with '4drop'`` () =
+    interpret "6 5 4 3 2 4drop" |> assertStackMatches [ Integer 6 ]
+
+[<Fact>]
 let ``Can drop stack elements with '.'`` () =
     interpret "3 2 ." |> assertStackMatches [ Integer 3 ]
 
 [<Fact>]
-let ``Can clear the stack`` () =
+let ``Can clear the stack with 'clear'`` () =
     interpret "1 2 3 4 5 clear" |> assertStackMatches []
 
 [<Fact>]
@@ -238,88 +246,88 @@ let ``Can define and execute custom words`` () =
     |> assertStackMatches [ Integer 25 ]
 
 [<Fact>]
-let ``Can call quotations`` () =
+let ``Can call quotations with 'call'`` () =
     interpret "1 [ 2 + ] call" |> assertStackMatches [ Integer 3 ]
 
 [<Fact>]
-let ``Can map arrays`` () =
+let ``Can map arrays with 'map'`` () =
     interpret "{ 1 2 3 } [ 1 + ] map"
     |> assertStackMatches [ Array [| Integer 2; Integer 3; Integer 4 |] ]
 
 [<Fact>]
-let ``Can filter arrays`` () =
+let ``Can filter arrays with 'filter'`` () =
     interpret "{ 1 2 3 4 } [ 2 % 0 = ] filter"
     |> assertStackMatches [ Array [| Integer 2; Integer 4 |] ]
 
 [<Fact>]
-let ``Can compare two values for equality`` () =
+let ``Can compare two values for equality with '='`` () =
     interpret "1 1 =" |> assertStackMatches [ Boolean true ]
     interpret "1 2 =" |> assertStackMatches [ Boolean false ]
 
 [<Fact>]
-let ``Can compare whether one value is greater than another`` () =
+let ``Can compare whether one value is greater than another with '>'`` () =
     interpret "2 1 >" |> assertStackMatches [ Boolean true ]
     interpret "1 2 >" |> assertStackMatches [ Boolean false ]
 
 [<Fact>]
-let ``Can compare whether one value is less than another`` () =
+let ``Can compare whether one value is less than another with '<'`` () =
     interpret "1 2 <" |> assertStackMatches [ Boolean true ]
     interpret "2 1 <" |> assertStackMatches [ Boolean false ]
 
 [<Fact>]
-let ``Can compare whether one value is greater than or equal to another`` () =
+let ``Can compare whether one value is greater than or equal to another with '>='`` () =
     interpret "2 1 >=" |> assertStackMatches [ Boolean true ]
     interpret "1 2 >=" |> assertStackMatches [ Boolean false ]
     interpret "2 2 >=" |> assertStackMatches [ Boolean true ]
 
 [<Fact>]
-let ``Can compare whether one value is less than or equal to another`` () =
+let ``Can compare whether one value is less than or equal to another with '<='`` () =
     interpret "1 2 <=" |> assertStackMatches [ Boolean true ]
     interpret "2 1 <=" |> assertStackMatches [ Boolean false ]
     interpret "2 2 <=" |> assertStackMatches [ Boolean true ]
 
 [<Fact>]
-let ``Can negate values`` () =
+let ``Can negate values with 'not'`` () =
       interpret "t not" |> assertStackMatches [ Boolean false ]
       interpret "f not" |> assertStackMatches [ Boolean true ]
 
 [<Fact>]
-let ``Can perform conditional branching`` () =
+let ``Can perform conditional branching with 'if'`` () =
     interpret "t [ 1 ] [ 2 ] if" |> assertStackMatches [ Integer 1 ]
     interpret "f [ 1 ] [ 2 ] if" |> assertStackMatches [ Integer 2 ]
 
 [<Fact>]
-let ``Can apply a quotation to the second stack value using dip`` () =
+let ``Can apply a quotation to the second stack value with 'dip'`` () =
     interpret "10 20 [ 5 + ] dip"
     |> assertStackMatches [ Integer 20; Integer 15 ]
 
 [<Fact>]
-let ``Can duplicate the second stack value using over`` () =
+let ``Can duplicate the second stack value with 'over'`` () =
     interpret "10 20 over"
     |> assertStackMatches [ Integer 10; Integer 20; Integer 10 ]
 
 [<Fact>]
-let ``Can apply a quotation and keep the input value with keep`` () =
+let ``Can apply a quotation and keep the input value with 'keep'`` () =
     interpret "20 [ 5 + ] keep"
     |> assertStackMatches [ Integer 20; Integer 25 ]
 
 [<Fact>]
-let ``Can apply two quotations to a stack value with bi`` () =
+let ``Can apply two quotations to a stack value with 'bi'`` () =
     interpret "20 [ 5 + ] [ 2 * ] bi"
     |> assertStackMatches [ Integer 40; Integer 25 ]
 
 [<Fact>]
-let ``Can apply two quotations to two stack values with bi*`` () =
+let ``Can apply two quotations to two stack values with 'bi*'`` () =
     interpret "10 20 [ 5 + ] [ 2 * ] bi*"
     |> assertStackMatches [ Integer 40; Integer 15 ]
 
 [<Fact>]
-let ``Can apply a quotation to two stack values with bi<at>`` () =
+let ``Can apply a quotation to two stack values with 'bi<at>'`` () =
     interpret "10 20 [ 5 + ] bi@"
     |> assertStackMatches [ Integer 25; Integer 15 ]
 
 [<Fact>]
-let ``Can apply three quotations to a stack value with tri`` () =
+let ``Can apply three quotations to a stack value with 'tri'`` () =
     interpret "20 [ 5 + ] [ 2 * ] [ 2 / ] tri"
     |> assertStackMatches [ Integer 10; Integer 40; Integer 25 ]
 
@@ -331,22 +339,27 @@ let ``Can define recursive words`` () =
     ] |> assertStackMatches []
 
 [<Fact>]
-let ``Can curry a parameter with a quotation`` () =
+let ``Can curry a parameter with a quotation with 'curry'`` () =
     interpret "{ 1 2 3 } 2 [ - ] curry map"
     |> assertStackMatches [ Array [| Integer -1; Integer 0; Integer 1 |] ]
 
 [<Fact>]
-let ``Can curry two parameters with a quotation`` () =
+let ``Can curry two parameters with a quotation with '2curry'`` () =
     interpret "5 4 [ + ] 2curry"
     |> assertStackMatches [ Quotation [ Integer 5; Integer 4; Word "+" ] ]
 
 [<Fact>]
-let ``Can apply a quotation if a condition is false`` () =
+let ``Can curry three parameters with a quotation with '3curry'`` () =
+    interpret "5 4 3 [ + ] 3curry"
+    |> assertStackMatches [ Quotation [ Integer 5; Integer 4; Integer 3; Word "+" ] ]
+
+[<Fact>]
+let ``Can apply a quotation if a condition is false with 'unless'`` () =
     interpret "\"value\" 1 0 > [ drop ] unless" |> assertStackMatches [ String "value" ]
     interpret "\"value\" 1 0 < [ drop ] unless" |> assertStackMatches []
 
 [<Fact>]
-let ``Can time execution of a quotation`` () =
+let ``Can time execution of a quotation with 'time'`` () =
     interpretMultiple [
         ": count-down dup 0 = [ drop ] [ 1 - count-down ] if ;"
         "[ 1000 count-down ] time"
@@ -355,3 +368,19 @@ let ``Can time execution of a quotation`` () =
         | Integer elapsed ->
             elapsed |> should greaterThan 0
         | _ -> Assert.True(false, "Expected an integer value"))
+
+[<Fact>]
+let ``Can rotate the top three stack elements with 'rot'`` () =
+    interpret "1 2 3 rot" |> assertStackMatches [ Integer 1; Integer 3; Integer 2 ]
+
+[<Fact>]
+let ``Can reverse rotate the top three stack elements with '-rot'`` () =
+    interpret "1 2 3 -rot" |> assertStackMatches [ Integer 2; Integer 1; Integer 3 ]
+
+[<Fact>]
+let ``Can drop the second stack element with 'nip'`` () =
+    interpret "1 2 nip" |> assertStackMatches [ Integer 2 ]
+
+[<Fact>]
+let ``Can duplicate the third element on the top of the stack with 'pick'`` () =
+    interpret "1 2 3 pick" |> assertStackMatches [ Integer 1; Integer 3; Integer 2; Integer 1; ]

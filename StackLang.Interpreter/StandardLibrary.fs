@@ -28,6 +28,11 @@ let operationWithThreeParameters (operation: Value * Value * Value * Value list 
     |> operationWithParameters 3 (fun (parameters, remainingStack) ->
         operation (parameters[0], parameters[1], parameters[2], remainingStack))
 
+let operationWithFourParameters (operation: Value * Value * Value * Value * Value list -> Result<Value list, string>) (stack: Value list) =
+    stack
+    |> operationWithParameters 4 (fun (parameters, remainingStack) ->
+        operation (parameters[0], parameters[1], parameters[2], parameters[3], remainingStack))
+
 let NativeAdd (_: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
     stack
     |> operationWithTwoParameters (fun (left, right, remainingStack) ->
@@ -78,7 +83,22 @@ let NativeDup (_: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
     stack
     |> operationWithOneParameter (fun (token, remainingStack) ->
         Ok (token::token::remainingStack))
-    
+
+let NativeTwoDup (_: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
+    stack
+    |> operationWithTwoParameters (fun (first, second, remainingStack) ->
+        first :: second :: first :: second :: remainingStack |> Ok)
+
+let NativeThreeDup (_: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
+    stack
+    |> operationWithThreeParameters (fun (first, second, third, remainingStack) ->
+        first :: second :: third :: first :: second :: third :: remainingStack |> Ok)
+
+let NativeFourDup (_: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
+    stack
+    |> operationWithFourParameters (fun (first, second, third, fourth, remainingStack) ->
+        first :: second :: third :: fourth :: first :: second :: third :: fourth :: remainingStack |> Ok)
+
 let NativeDrop (_: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
     stack
     |> operationWithOneParameter (fun (_, remainingStack) ->
@@ -213,6 +233,26 @@ let NativeTime (engine: IExecutionEngine) (dictionary: Map<string, Word>) (stack
                 (Integer elapsed) :: resultStack)
         | _ -> Error "Expected a quotation")
 
+let NativeRot (_: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
+    stack
+    |> operationWithThreeParameters (fun (first, second, third, remainingStack) ->
+        third :: first :: second :: remainingStack |> Ok)
+
+let NativeMinusRot (_: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
+    stack
+    |> operationWithThreeParameters (fun (first, second, third, remainingStack) ->
+        second :: third :: first :: remainingStack |> Ok)
+
+let NativeNip (_: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
+    stack
+    |> operationWithTwoParameters (fun (first, _, remainingStack) ->
+        first :: remainingStack |> Ok)
+
+let NativePick (_: IExecutionEngine) (_: Map<string, Word>) (stack: Value list) =
+    stack
+    |> operationWithThreeParameters (fun (first, second, third, remainingStack) ->
+        third :: first :: second :: third :: remainingStack |> Ok)
+
 let NativeWords (engine: IExecutionEngine) = [
     { Symbol = "+"; Instructions = Native (NativeAdd engine) }
     { Symbol = "-"; Instructions = Native (NativeSubtract engine) }
@@ -220,6 +260,9 @@ let NativeWords (engine: IExecutionEngine) = [
     { Symbol = "/"; Instructions = Native (NativeDivide engine) }
     { Symbol = "%"; Instructions = Native (NativeModulus engine) }
     { Symbol = "dup"; Instructions = Native (NativeDup engine) }
+    { Symbol = "2dup"; Instructions = Native (NativeTwoDup engine) }
+    { Symbol = "3dup"; Instructions = Native (NativeThreeDup engine) }
+    { Symbol = "4dup"; Instructions = Native (NativeFourDup engine) }
     { Symbol = "drop"; Instructions = Native (NativeDrop engine) }
     { Symbol = "."; Instructions = Native (NativePrintAndDrop engine) }
     { Symbol = "swap"; Instructions = Native (NativeSwap engine) }
@@ -237,6 +280,10 @@ let NativeWords (engine: IExecutionEngine) = [
     { Symbol = "over"; Instructions = Native (NativeOver engine) }
     { Symbol = "curry"; Instructions = Native (NativeCurry engine) }
     { Symbol = "time"; Instructions = Native (NativeTime engine) }
+    { Symbol = "rot"; Instructions = Native (NativeRot engine) }
+    { Symbol = "-rot"; Instructions = Native (NativeMinusRot engine) }
+    { Symbol = "nip"; Instructions = Native (NativeNip engine) }
+    { Symbol = "pick"; Instructions = Native (NativePick engine) }
 ]
 
 let CompiledWords = @"
@@ -249,6 +296,10 @@ let CompiledWords = @"
 : bi@ dup bi* ;
 : tri [ [ keep ] dip keep ] dip call ;
 : 2curry curry curry ;
+: 3curry curry curry curry ;
 : unless swap [ drop ] [ call ] if ;
+: 2drop drop drop ;
+: 3drop drop drop drop ;
+: 4drop drop drop drop drop ;
 
 "
